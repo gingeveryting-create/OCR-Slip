@@ -17,11 +17,12 @@ export async function detectDuplicates(input: DuplicateInput) {
   const supabase = createAdminSupabase();
   const warnings: Array<{ rule: string; claimId: string; claimNo: string | null }> = [];
 
-  async function addMatches(rule: string, query: any) {
-    const { data } = await query
-      .select("id,claim_no")
-      .neq("id", input.claimId)
-      .limit(5);
+  async function addMatches(rule: string, filters: Record<string, string | number>) {
+    let query = supabase.from("expense_claims").select("id,claim_no").neq("id", input.claimId);
+    Object.entries(filters).forEach(([column, value]) => {
+      query = query.eq(column, value);
+    });
+    const { data } = await query.limit(5);
     (data ?? []).forEach((row: any) => warnings.push({ rule, claimId: row.id, claimNo: row.claim_no }));
   }
 
@@ -37,30 +38,30 @@ export async function detectDuplicates(input: DuplicateInput) {
     );
   }
 
-  if (input.receiptNo) await addMatches("receipt_no", supabase.from("expense_claims").eq("receipt_no", input.receiptNo));
-  if (input.taxInvoiceNo) await addMatches("tax_invoice_no", supabase.from("expense_claims").eq("tax_invoice_no", input.taxInvoiceNo));
-  if (input.transactionId) await addMatches("transaction_id", supabase.from("expense_claims").eq("transaction_id", input.transactionId));
-  if (input.referenceNo) await addMatches("reference_no", supabase.from("expense_claims").eq("reference_no", input.referenceNo));
+  if (input.receiptNo) await addMatches("receipt_no", { receipt_no: input.receiptNo });
+  if (input.taxInvoiceNo) await addMatches("tax_invoice_no", { tax_invoice_no: input.taxInvoiceNo });
+  if (input.transactionId) await addMatches("transaction_id", { transaction_id: input.transactionId });
+  if (input.referenceNo) await addMatches("reference_no", { reference_no: input.referenceNo });
 
   if (input.merchantName && input.receiptDate && input.totalAmount != null) {
     await addMatches(
       "merchant_date_amount",
-      supabase
-        .from("expense_claims")
-        .eq("merchant_name", input.merchantName)
-        .eq("receipt_date", input.receiptDate)
-        .eq("total_amount", input.totalAmount)
+      {
+        merchant_name: input.merchantName,
+        receipt_date: input.receiptDate,
+        total_amount: input.totalAmount
+      }
     );
   }
 
   if (input.employeeId && input.receiptDate && input.totalAmount != null) {
     await addMatches(
       "employee_date_amount",
-      supabase
-        .from("expense_claims")
-        .eq("employee_id", input.employeeId)
-        .eq("receipt_date", input.receiptDate)
-        .eq("total_amount", input.totalAmount)
+      {
+        employee_id: input.employeeId,
+        receipt_date: input.receiptDate,
+        total_amount: input.totalAmount
+      }
     );
   }
 
