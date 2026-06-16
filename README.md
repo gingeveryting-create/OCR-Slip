@@ -1,15 +1,15 @@
-# Smart Expense Slip Reader
+﻿# Smart Expense Slip Reader
 
-เว็บแอปสำหรับ expense reimbursement ของบริษัท พนักงานอัปโหลด receipt/slip แล้วระบบอ่านข้อมูลด้วย OCR/AI ก่อนสร้าง claim ให้ Finance ตรวจเอกสารต้นฉบับเทียบกับข้อมูลที่ระบบอ่านได้และข้อมูลที่พนักงานยืนยัน
+à¹€à¸§à¹‡à¸šà¹à¸­à¸›à¸ªà¸³à¸«à¸£à¸±à¸š expense reimbursement à¸‚à¸­à¸‡à¸šà¸£à¸´à¸©à¸±à¸— à¸žà¸™à¸±à¸à¸‡à¸²à¸™à¸­à¸±à¸›à¹‚à¸«à¸¥à¸” receipt/slip à¹à¸¥à¹‰à¸§à¸£à¸°à¸šà¸šà¸­à¹ˆà¸²à¸™à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸”à¹‰à¸§à¸¢ OCR/AI à¸à¹ˆà¸­à¸™à¸ªà¸£à¹‰à¸²à¸‡ claim à¹ƒà¸«à¹‰ Finance à¸•à¸£à¸§à¸ˆà¹€à¸­à¸à¸ªà¸²à¸£à¸•à¹‰à¸™à¸‰à¸šà¸±à¸šà¹€à¸—à¸µà¸¢à¸šà¸à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¸£à¸°à¸šà¸šà¸­à¹ˆà¸²à¸™à¹„à¸”à¹‰à¹à¸¥à¸°à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¸žà¸™à¸±à¸à¸‡à¸²à¸™à¸¢à¸·à¸™à¸¢à¸±à¸™
 
 ## Tech Stack
 
 - Next.js App Router, TypeScript, React, Tailwind CSS, shadcn-style UI primitives
 - Supabase Auth, PostgreSQL, Row Level Security, Storage
-- OpenAI Vision OCR provider ผ่าน abstraction `OcrProvider`
+- OpenAI Vision OCR provider à¸œà¹ˆà¸²à¸™ abstraction `OcrProvider`
 - QR Code: `qrcode`
 - Excel export: `exceljs`
-- Deploy target: Cloudflare Pages + Supabase
+- Deploy target: Cloudflare Workers with OpenNext + Supabase
 
 ## Local Run
 
@@ -18,11 +18,11 @@ npm install
 npm run dev
 ```
 
-เปิด `http://localhost:3000`
+à¹€à¸›à¸´à¸” `http://localhost:3000`
 
 ## Environment Variables
 
-คัดลอกจาก `.env.example` เป็น `.env.local`
+à¸„à¸±à¸”à¸¥à¸­à¸à¸ˆà¸²à¸ `.env.example` à¹€à¸›à¹‡à¸™ `.env.local`
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
@@ -34,20 +34,20 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 SUPABASE_STORAGE_BUCKET=receipts
 ```
 
-ห้ามใส่ `SUPABASE_SERVICE_ROLE_KEY` หรือ `OPENAI_API_KEY` ใน frontend/public code
+à¸«à¹‰à¸²à¸¡à¹ƒà¸ªà¹ˆ `SUPABASE_SERVICE_ROLE_KEY` à¸«à¸£à¸·à¸­ `OPENAI_API_KEY` à¹ƒà¸™ frontend/public code
 
 ## Supabase Setup
 
-1. สร้าง Supabase project
-2. เปิด SQL Editor แล้วรัน migration ตามลำดับ:
+1. à¸ªà¸£à¹‰à¸²à¸‡ Supabase project
+2. à¹€à¸›à¸´à¸” SQL Editor à¹à¸¥à¹‰à¸§à¸£à¸±à¸™ migration à¸•à¸²à¸¡à¸¥à¸³à¸”à¸±à¸š:
    - `supabase/migrations/202606160001_init.sql`
    - `supabase/migrations/202606160002_storage.sql`
-3. ตรวจว่า private storage bucket ชื่อ `receipts` ถูกสร้างแล้ว
-4. เปิด Supabase Auth provider ที่ต้องการ เช่น Email/Password
-5. ตั้ง environment variables ใน `.env.local`
-6. สร้าง first admin user:
-   - สมัคร user ผ่าน Supabase Auth หรือหน้า `/login` ตาม flow ที่เปิดไว้
-   - ไปที่ SQL Editor แล้วรัน:
+3. à¸•à¸£à¸§à¸ˆà¸§à¹ˆà¸² private storage bucket à¸Šà¸·à¹ˆà¸­ `receipts` à¸–à¸¹à¸à¸ªà¸£à¹‰à¸²à¸‡à¹à¸¥à¹‰à¸§
+4. à¹€à¸›à¸´à¸” Supabase Auth provider à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£ à¹€à¸Šà¹ˆà¸™ Email/Password
+5. à¸•à¸±à¹‰à¸‡ environment variables à¹ƒà¸™ `.env.local`
+6. à¸ªà¸£à¹‰à¸²à¸‡ first admin user:
+   - à¸ªà¸¡à¸±à¸„à¸£ user à¸œà¹ˆà¸²à¸™ Supabase Auth à¸«à¸£à¸·à¸­à¸«à¸™à¹‰à¸² `/login` à¸•à¸²à¸¡ flow à¸—à¸µà¹ˆà¹€à¸›à¸´à¸”à¹„à¸§à¹‰
+   - à¹„à¸›à¸—à¸µà¹ˆ SQL Editor à¹à¸¥à¹‰à¸§à¸£à¸±à¸™:
 
 ```sql
 update public.profiles
@@ -55,32 +55,32 @@ set role = 'ADMIN', full_name = 'System Admin'
 where email = 'YOUR_ADMIN_EMAIL@example.com';
 ```
 
-7. สร้าง user สำหรับ Finance ด้วย role `FINANCE` ถ้าต้องการทดสอบ finance flow
-8. รัน `npm run dev`
+7. à¸ªà¸£à¹‰à¸²à¸‡ user à¸ªà¸³à¸«à¸£à¸±à¸š Finance à¸”à¹‰à¸§à¸¢ role `FINANCE` à¸–à¹‰à¸²à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸—à¸”à¸ªà¸­à¸š finance flow
+8. à¸£à¸±à¸™ `npm run dev`
 
 ## Main Flows
 
 Employee:
 
 1. Login
-2. เปิด `/claims/new`
-3. Upload image/PDF ไป private Supabase Storage
-4. กด Start Extraction
-5. API สร้าง signed URL ชั่วคราวและเรียก OpenAI Vision
-6. เปิด `/claims/[id]/review`
-7. แก้เฉพาะ field ที่ OCR ผิดหรือ confidence ต่ำ
-8. Submit claim เพื่อสร้าง `CLMYYYYMMDDXXXX`
-9. เปิด QR Code ที่ `/claims/[id]/qr`
+2. à¹€à¸›à¸´à¸” `/claims/new`
+3. Upload image/PDF à¹„à¸› private Supabase Storage
+4. à¸à¸” Start Extraction
+5. API à¸ªà¸£à¹‰à¸²à¸‡ signed URL à¸Šà¸±à¹ˆà¸§à¸„à¸£à¸²à¸§à¹à¸¥à¸°à¹€à¸£à¸µà¸¢à¸ OpenAI Vision
+6. à¹€à¸›à¸´à¸” `/claims/[id]/review`
+7. à¹à¸à¹‰à¹€à¸‰à¸žà¸²à¸° field à¸—à¸µà¹ˆ OCR à¸œà¸´à¸”à¸«à¸£à¸·à¸­ confidence à¸•à¹ˆà¸³
+8. Submit claim à¹€à¸žà¸·à¹ˆà¸­à¸ªà¸£à¹‰à¸²à¸‡ `CLMYYYYMMDDXXXX`
+9. à¹€à¸›à¸´à¸” QR Code à¸—à¸µà¹ˆ `/claims/[id]/qr`
 
 Finance:
 
-1. Login ด้วย role `FINANCE`
-2. เปิด `/finance`
-3. เลือก claim
-4. ดู original image/PDF ซ้าย และ extracted/confirmed data ขวา
-5. ตรวจ duplicate warning
-6. Approve หรือ Reject พร้อม reason
-7. Export Excel ที่ `/api/finance/claims/export`
+1. Login à¸”à¹‰à¸§à¸¢ role `FINANCE`
+2. à¹€à¸›à¸´à¸” `/finance`
+3. à¹€à¸¥à¸·à¸­à¸ claim
+4. à¸”à¸¹ original image/PDF à¸‹à¹‰à¸²à¸¢ à¹à¸¥à¸° extracted/confirmed data à¸‚à¸§à¸²
+5. à¸•à¸£à¸§à¸ˆ duplicate warning
+6. Approve à¸«à¸£à¸·à¸­ Reject à¸žà¸£à¹‰à¸­à¸¡ reason
+7. Export Excel à¸—à¸µà¹ˆ `/api/finance/claims/export`
 
 Admin:
 
@@ -112,7 +112,7 @@ Admin:
 
 ## OCR Provider Abstraction
 
-Interface อยู่ที่ `lib/ocr/types.ts`
+Interface à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ `lib/ocr/types.ts`
 
 ```ts
 interface OcrProvider {
@@ -120,25 +120,25 @@ interface OcrProvider {
 }
 ```
 
-implementation แรกคือ `OpenAiVisionOcrProvider` ที่ `lib/ocr/openai.ts` และ prompt อยู่ที่ `lib/ocr/prompt.ts`
+implementation à¹à¸£à¸à¸„à¸·à¸­ `OpenAiVisionOcrProvider` à¸—à¸µà¹ˆ `lib/ocr/openai.ts` à¹à¸¥à¸° prompt à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ `lib/ocr/prompt.ts`
 
-ถ้าจะเปลี่ยนเป็น Google Vision, Azure Document Intelligence หรือ AWS Textract ให้เพิ่ม provider ใหม่และเปลี่ยน `createOcrProvider()`
+à¸–à¹‰à¸²à¸ˆà¸°à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸›à¹‡à¸™ Google Vision, Azure Document Intelligence à¸«à¸£à¸·à¸­ AWS Textract à¹ƒà¸«à¹‰à¹€à¸žà¸´à¹ˆà¸¡ provider à¹ƒà¸«à¸¡à¹ˆà¹à¸¥à¸°à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ `createOcrProvider()`
 
 ## Security Notes
 
-- Storage bucket เป็น private
-- Server routes ใช้ service role เฉพาะฝั่ง server
-- Browser ใช้ Supabase anon key เท่านั้น
-- API ตรวจ role ทุก route
-- RLS จำกัด employee ให้อ่าน/แก้เฉพาะ claim ตัวเอง
-- Finance/Admin อ่าน claim ได้ตาม policy
-- QR verify page ต้อง login เพราะหน้า route เรียก `requireProfile()`
-- Upload validate MIME type และ limit 10MB
-- Audit log ถูกบันทึกเมื่อ upload, OCR, correction, submit, approve, reject และ admin changes
+- Storage bucket à¹€à¸›à¹‡à¸™ private
+- Server routes à¹ƒà¸Šà¹‰ service role à¹€à¸‰à¸žà¸²à¸°à¸à¸±à¹ˆà¸‡ server
+- Browser à¹ƒà¸Šà¹‰ Supabase anon key à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
+- API à¸•à¸£à¸§à¸ˆ role à¸—à¸¸à¸ route
+- RLS à¸ˆà¸³à¸à¸±à¸” employee à¹ƒà¸«à¹‰à¸­à¹ˆà¸²à¸™/à¹à¸à¹‰à¹€à¸‰à¸žà¸²à¸° claim à¸•à¸±à¸§à¹€à¸­à¸‡
+- Finance/Admin à¸­à¹ˆà¸²à¸™ claim à¹„à¸”à¹‰à¸•à¸²à¸¡ policy
+- QR verify page à¸•à¹‰à¸­à¸‡ login à¹€à¸žà¸£à¸²à¸°à¸«à¸™à¹‰à¸² route à¹€à¸£à¸µà¸¢à¸ `requireProfile()`
+- Upload validate MIME type à¹à¸¥à¸° limit 10MB
+- Audit log à¸–à¸¹à¸à¸šà¸±à¸™à¸—à¸¶à¸à¹€à¸¡à¸·à¹ˆà¸­ upload, OCR, correction, submit, approve, reject à¹à¸¥à¸° admin changes
 
 ## Duplicate Detection
 
-ระบบตรวจและแสดง warning เท่านั้น ไม่ auto reject โดยใช้เงื่อนไข:
+à¸£à¸°à¸šà¸šà¸•à¸£à¸§à¸ˆà¹à¸¥à¸°à¹à¸ªà¸”à¸‡ warning à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ à¹„à¸¡à¹ˆ auto reject à¹‚à¸”à¸¢à¹ƒà¸Šà¹‰à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚:
 
 - `file_hash`
 - `receipt_no`
@@ -148,33 +148,45 @@ implementation แรกคือ `OpenAiVisionOcrProvider` ที่ `lib/ocr/o
 - `merchant_name + receipt_date + total_amount`
 - `employee_id + receipt_date + total_amount`
 
-## Cloudflare Pages Deployment
+## Cloudflare Deployment
+This app uses Next.js App Router plus API routes, so the recommended Cloudflare target is Cloudflare Workers through OpenNext, not a static Cloudflare Pages export.
 
-1. Push project ไป GitHub
-2. Connect repository ใน Cloudflare Pages
-3. Framework preset: Next.js
-4. Build command:
+### One-time setup
 
-```bash
-npm run build
-```
-
-5. Output directory:
+1. Push the project to GitHub.
+2. In Cloudflare, create a Workers project from the GitHub repository or deploy from local Wrangler.
+3. Build/deploy command:
 
 ```bash
-.next
+npm run deploy:cloudflare
 ```
 
-6. เพิ่ม environment variables ใน Cloudflare Pages:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `OPENAI_API_KEY`
-   - `OCR_PROVIDER`
-   - `NEXT_PUBLIC_APP_URL`
-   - `SUPABASE_STORAGE_BUCKET`
-7. ใน Supabase Auth เพิ่ม redirect URL ของ Cloudflare Pages domain
-8. Deploy
-9. ทดสอบ login, upload, extraction, finance review, approve/reject และ Excel export
+For local Workers runtime preview:
 
-หมายเหตุ: ถ้าจะ optimize สำหรับ Cloudflare runtime เต็มรูปแบบในอนาคต ให้พิจารณา `@cloudflare/next-on-pages` หรือแยก API บางส่วนไป Cloudflare Workers แต่เวอร์ชันนี้ตั้งใจให้ local development และ Next.js API Routes ใช้งานเร็วที่สุดก่อน
+```bash
+npm run preview:cloudflare
+```
+
+### Environment variables
+
+Set these in Cloudflare Worker variables/secrets. Do not commit real values.
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_OCR_MODEL`
+- `OCR_PROVIDER`
+- `NEXT_PUBLIC_APP_URL`
+- `SUPABASE_STORAGE_BUCKET`
+
+For external testing, use `OCR_PROVIDER=openai` when OpenAI billing/usage is available. The local `tesseract` provider is useful for free local tests, but it is slower and less accurate for Thai receipts and is not the best fit for Cloudflare Workers.
+
+### Supabase Auth URLs
+
+In Supabase Auth URL configuration, add:
+
+- Site URL: `https://YOUR_WORKER_DOMAIN`
+- Redirect URL: `https://YOUR_WORKER_DOMAIN/**`
+
+Then test login, signup, upload, OCR extraction, employee submit, finance review, approve/reject, QR verify, and Excel export.

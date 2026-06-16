@@ -5,6 +5,7 @@ import type { OcrExtractionResult, OcrProvider } from "@/lib/ocr/types";
 
 export class OpenAiVisionOcrProvider implements OcrProvider {
   private client: OpenAI;
+  private model: string;
 
   constructor() {
     const env = getServerEnv();
@@ -12,6 +13,7 @@ export class OpenAiVisionOcrProvider implements OcrProvider {
       throw new Error("OPENAI_API_KEY is required when OCR_PROVIDER=openai");
     }
     this.client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    this.model = env.OPENAI_OCR_MODEL;
   }
 
   async extract(fileUrl: string, mimeType: string): Promise<OcrExtractionResult> {
@@ -21,7 +23,7 @@ export class OpenAiVisionOcrProvider implements OcrProvider {
         throw new Error("OpenAI SDK version must support Responses API for PDF extraction.");
       }
       const response = await responsesClient.create({
-        model: "gpt-4o-mini",
+        model: this.model,
         input: [
           {
             role: "user",
@@ -39,7 +41,7 @@ export class OpenAiVisionOcrProvider implements OcrProvider {
     }
 
     const response = await this.client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: this.model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [

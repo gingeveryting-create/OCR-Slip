@@ -5,6 +5,7 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   OPENAI_API_KEY: z.string().optional(),
+  OPENAI_OCR_MODEL: z.string().default("gpt-4o-mini"),
   OCR_PROVIDER: z.string().default("openai"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
   SUPABASE_STORAGE_BUCKET: z.string().default("receipts")

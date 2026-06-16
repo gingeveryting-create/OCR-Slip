@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiError, mapClaimPatch, ok } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
+import { getServerEnv } from "@/lib/env";
 import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
 import { claimPatchSchema } from "@/lib/validation";
 
@@ -52,6 +53,49 @@ export async function PATCH(request: Request, { params }: Params) {
       performedBy: profile.id
     });
     return ok({ claim: data });
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+export async function DELETE(_: Request, { params }: Params) {
+  try {
+    const { id } = await params;
+    const { profile } = await requireProfile(["EMPLOYEE", "ADMIN"]);
+    const admin = createAdminSupabase();
+    const { data: current, error: currentError } = await admin
+      .from("expense_claims")
+      .select("*, expense_attachments(*)")
+      .eq("id", id)
+      .single();
+    if (currentError) throw currentError;
+
+    if (profile.role === "EMPLOYEE" && current.employee_id !== profile.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (profile.role === "EMPLOYEE" && !["DRAFT", "OCR_FAILED", "EXTRACTED", "REJECTED"].includes(current.status)) {
+      return NextResponse.json({ error: "Only draft, failed, extracted, or rejected claims can be deleted" }, { status: 409 });
+    }
+
+    const env = getServerEnv();
+    const paths = (current.expense_attachments ?? [])
+      .map((attachment: any) => attachment.file_path)
+      .filter(Boolean);
+    if (paths.length) {
+      await admin.storage.from(env.SUPABASE_STORAGE_BUCKET).remove(paths);
+    }
+
+    await writeAuditLog({
+      claimId: null,
+      action: "CLAIM_DELETED",
+      oldValue: { status: current.status, claimNo: current.claim_no },
+      performedBy: profile.id,
+      remark: `Deleted claim ${id}`
+    });
+
+    const { error } = await admin.from("expense_claims").delete().eq("id", id);
+    if (error) throw error;
+    return ok({ deleted: true });
   } catch (error) {
     return apiError(error);
   }

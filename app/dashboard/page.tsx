@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createServerSupabase, requireProfile } from "@/lib/supabase/server";
+import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
 export default async function DashboardPage() {
@@ -11,7 +12,7 @@ export default async function DashboardPage() {
   const supabase = await createServerSupabase();
   const { data: claims } = await supabase
     .from("expense_claims")
-    .select("id,claim_no,merchant_name,total_amount,currency,status,created_at")
+    .select("id,claim_no,merchant_name,total_amount,currency,status,reject_reason,created_at")
     .eq("employee_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
                   <th>ร้านค้า</th>
                   <th>ยอดเงิน</th>
                   <th>สถานะ</th>
+                  <th>เหตุผล</th>
                   <th></th>
                 </tr>
               </thead>
@@ -50,7 +52,8 @@ export default async function DashboardPage() {
                     <td>{claim.claim_no ?? "-"}</td>
                     <td>{claim.merchant_name ?? "-"}</td>
                     <td>{formatMoney(claim.total_amount, claim.currency)}</td>
-                    <td><Badge>{claim.status}</Badge></td>
+                    <td><Badge tone={claimStatusTone(claim.status)}>{claimStatusLabel(claim.status)}</Badge></td>
+                    <td className="max-w-sm text-sm text-red-700">{claim.status === "REJECTED" ? claim.reject_reason ?? "-" : "-"}</td>
                     <td><Link className="text-primary" href={`/claims/${claim.id}`}>ดูรายละเอียด</Link></td>
                   </tr>
                 ))}

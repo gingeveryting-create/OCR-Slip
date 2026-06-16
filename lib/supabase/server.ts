@@ -43,7 +43,8 @@ export async function getCurrentProfile() {
 
   if (!user) return { user: null, profile: null, supabase };
 
-  const { data: profile } = await supabase
+  const admin = createAdminSupabase();
+  const { data: profile } = await admin
     .from("profiles")
     .select("id,email,full_name,department,role")
     .eq("id", user.id)

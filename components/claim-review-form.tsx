@@ -110,6 +110,11 @@ export function ClaimReviewForm({ claim, signedUrl }: { claim: any; signedUrl: s
           <CardDescription>ช่อง confidence ต่ำจะแสดงพื้นหลังอ่อน ให้แก้เฉพาะค่าที่ผิดหรือไม่มั่นใจ</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {Array.isArray(extraction?.warnings) && extraction.warnings.length ? (
+            <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+              {extraction.warnings.join(" ")}
+            </div>
+          ) : null}
           <div className="field-grid">
             {fields.map(([key, label]) => {
               const score = confidence(key);

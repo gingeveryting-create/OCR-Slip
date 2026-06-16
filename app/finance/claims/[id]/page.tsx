@@ -1,10 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { FinanceActions } from "@/components/finance-actions";
+import { FinanceReviewData } from "@/components/finance-review-data";
 import { ReceiptViewer } from "@/components/receipt-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getClaimDetail } from "@/lib/claims";
 import { requireProfile } from "@/lib/supabase/server";
+import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
 type PageProps = { params: Promise<{ id: string }> };
@@ -50,26 +52,14 @@ export default async function FinanceClaimDetailPage({ params }: PageProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Badge>{claim.status}</Badge>
+                <Badge tone={claimStatusTone(claim.status)}>{claimStatusLabel(claim.status)}</Badge>
                 <Badge tone={claim.duplicate_score ? "amber" : "green"}>Duplicate {claim.duplicate_score ?? 0}%</Badge>
                 <Badge>OCR {claim.confidence_score ?? "-"}%</Badge>
               </div>
               {changed.length ? (
                 <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">Employee changed: {changed.join(", ")}</div>
               ) : null}
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div>
-                  <h3 className="mb-2 font-semibold">Extracted JSON</h3>
-                  <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(claim.extracted_json, null, 2)}</pre>
-                </div>
-                <div>
-                  <h3 className="mb-2 font-semibold">Confirmed data</h3>
-                  <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(claim.confirmed_json, null, 2)}</pre>
-                </div>
-              </div>
-              {claim.duplicate_warning ? (
-                <pre className="overflow-auto rounded-md bg-amber-50 p-3 text-xs text-amber-900">{JSON.stringify(claim.duplicate_warning, null, 2)}</pre>
-              ) : null}
+              <FinanceReviewData claim={claim} changed={changed} />
               <FinanceActions claimId={claim.id} />
             </CardContent>
           </Card>

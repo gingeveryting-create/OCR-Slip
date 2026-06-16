@@ -1,15 +1,18 @@
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getServerEnv } from "@/lib/env";
 import { getClaimDetail } from "@/lib/claims";
-import { requireProfile } from "@/lib/supabase/server";
+import { getCurrentProfile } from "@/lib/supabase/server";
 import QRCode from "qrcode";
 
 type PageProps = { params: Promise<{ id: string }> };
 
 export default async function ClaimQrPage({ params }: PageProps) {
   const { id } = await params;
-  const { profile } = await requireProfile();
+  const { profile } = await getCurrentProfile();
+  if (!profile) redirect(`/login?next=${encodeURIComponent(`/claims/${id}/qr`)}`);
+  if (profile.role === "FINANCE" || profile.role === "ADMIN") redirect(`/finance/claims/${id}`);
   const { claim } = await getClaimDetail(id, profile);
   const env = getServerEnv();
   const url = `${env.NEXT_PUBLIC_APP_URL}/claims/${id}/qr`;

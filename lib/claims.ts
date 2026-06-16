@@ -6,7 +6,7 @@ export async function getClaimDetail(id: string, profile: ProfileRow) {
   const admin = createAdminSupabase();
   const { data: claim, error } = await admin
     .from("expense_claims")
-    .select("*, profiles(email,full_name,department), expense_attachments(*), audit_logs(*)")
+    .select("*, profiles!expense_claims_employee_id_fkey(email,full_name,department), expense_attachments(*), audit_logs(*)")
     .eq("id", id)
     .single();
   if (error) throw error;

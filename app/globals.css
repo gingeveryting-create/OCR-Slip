@@ -60,6 +60,49 @@ thead {
   color: hsl(var(--muted-foreground));
 }
 
+.table-section-summary thead {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.table-section-pending thead {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.table-section-approved thead {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.table-section-rejected thead {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.table-section-summary,
+.table-section-pending,
+.table-section-approved,
+.table-section-rejected {
+  border-left-width: 4px;
+}
+
+.table-section-summary {
+  border-left-color: #0284c7;
+}
+
+.table-section-pending {
+  border-left-color: #f59e0b;
+}
+
+.table-section-approved {
+  border-left-color: #10b981;
+}
+
+.table-section-rejected {
+  border-left-color: #ef4444;
+}
+
 tbody tr + tr {
   border-top: 1px solid hsl(var(--border));
 }

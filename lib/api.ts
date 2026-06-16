@@ -11,7 +11,7 @@ export function apiError(error: unknown) {
 }
 
 export function mapClaimPatch(input: Record<string, unknown>) {
-  return {
+  const patch = {
     expense_type_id: input.expenseTypeId,
     merchant_name: input.merchantName,
     receipt_no: input.receiptNo,
@@ -36,4 +36,5 @@ export function mapClaimPatch(input: Record<string, unknown>) {
     currency: input.currency,
     confirmed_json: input
   };
+  return Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
 }

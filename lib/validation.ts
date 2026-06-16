@@ -10,29 +10,33 @@ export const allowedMimeTypes = [
 
 export const maxUploadBytes = 10 * 1024 * 1024;
 
+const emptyStringToNull = (value: unknown) => (value === "" ? null : value);
+const nullableText = z.preprocess(emptyStringToNull, z.string().nullable().optional());
+const nullableNumber = z.preprocess(emptyStringToNull, z.coerce.number().nullable().optional());
+
 export const claimPatchSchema = z.object({
   expenseTypeId: z.string().uuid().nullable().optional(),
-  merchantName: z.string().nullable().optional(),
-  receiptNo: z.string().nullable().optional(),
-  taxInvoiceNo: z.string().nullable().optional(),
-  receiptDate: z.string().nullable().optional(),
-  receiptTime: z.string().nullable().optional(),
-  totalAmount: z.coerce.number().nullable().optional(),
-  amountBeforeVat: z.coerce.number().nullable().optional(),
-  vatAmount: z.coerce.number().nullable().optional(),
-  taxId: z.string().nullable().optional(),
-  branchNo: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
-  paymentMethod: z.string().nullable().optional(),
-  bankName: z.string().nullable().optional(),
-  senderName: z.string().nullable().optional(),
-  senderAccount: z.string().nullable().optional(),
-  receiverName: z.string().nullable().optional(),
-  receiverAccount: z.string().nullable().optional(),
-  transactionId: z.string().nullable().optional(),
-  referenceNo: z.string().nullable().optional(),
-  qrData: z.string().nullable().optional(),
-  currency: z.string().default("THB").optional()
+  merchantName: nullableText,
+  receiptNo: nullableText,
+  taxInvoiceNo: nullableText,
+  receiptDate: nullableText,
+  receiptTime: nullableText,
+  totalAmount: nullableNumber,
+  amountBeforeVat: nullableNumber,
+  vatAmount: nullableNumber,
+  taxId: nullableText,
+  branchNo: nullableText,
+  address: nullableText,
+  paymentMethod: nullableText,
+  bankName: nullableText,
+  senderName: nullableText,
+  senderAccount: nullableText,
+  receiverName: nullableText,
+  receiverAccount: nullableText,
+  transactionId: nullableText,
+  referenceNo: nullableText,
+  qrData: nullableText,
+  currency: z.preprocess((value) => value === "" || value == null ? "THB" : value, z.string().optional())
 });
 
 export const rejectSchema = z.object({
@@ -41,6 +45,13 @@ export const rejectSchema = z.object({
 
 export const roleSchema = z.object({
   role: z.enum(["EMPLOYEE", "FINANCE", "ADMIN"])
+});
+
+export const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  fullName: z.string().min(1).max(120),
+  department: z.string().max(120).optional().default("")
 });
 
 export const masterDataSchema = z.object({

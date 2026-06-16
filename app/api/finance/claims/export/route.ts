@@ -7,7 +7,7 @@ export async function GET() {
     const { supabase } = await requireProfile(["FINANCE", "ADMIN"]);
     const { data, error } = await supabase
       .from("expense_claims")
-      .select("claim_no,merchant_name,receipt_date,total_amount,vat_amount,currency,status,profiles(email,full_name)")
+      .select("claim_no,merchant_name,receipt_date,total_amount,vat_amount,currency,status,profiles!expense_claims_employee_id_fkey(email,full_name)")
       .order("created_at", { ascending: false });
     if (error) throw error;
 
