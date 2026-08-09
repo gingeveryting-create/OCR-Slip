@@ -17,7 +17,7 @@ export function ClaimActions({
   const router = useRouter();
 
   async function deleteClaim() {
-    const confirmed = window.confirm("Delete this claim? This will also remove its uploaded receipt file.");
+    const confirmed = window.confirm("ลบรายการเบิกนี้หรือไม่? ไฟล์ใบเสร็จที่อัปโหลดไว้จะถูกลบด้วย");
     if (!confirmed) return;
 
     const response = await fetch(`/api/claims/${claimId}`, { method: "DELETE" });

@@ -5,7 +5,7 @@ import { ReceiptViewer } from "@/components/receipt-viewer";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getClaimDetail } from "@/lib/claims";
-import { requireProfile } from "@/lib/supabase/server";
+import { requirePageProfile } from "@/lib/supabase/server";
 import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ function changedFields(extracted: any, confirmed: any) {
 
 export default async function FinanceClaimDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const { profile } = await requireProfile(["FINANCE", "ADMIN"]);
+  const { profile } = await requirePageProfile(["FINANCE", "ADMIN"]);
   const { claim, signedUrl } = await getClaimDetail(id, profile);
   const changed = changedFields(claim.extracted_json, claim.confirmed_json);
 

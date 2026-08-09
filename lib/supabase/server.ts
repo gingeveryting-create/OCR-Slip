@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
@@ -61,5 +62,12 @@ export async function requireProfile(roles?: UserRole[]) {
   if (roles && !roles.includes(result.profile.role)) {
     throw new Response("Forbidden", { status: 403 });
   }
+  return result as typeof result & { profile: ProfileRow };
+}
+
+export async function requirePageProfile(roles?: UserRole[]) {
+  const result = await getCurrentProfile();
+  if (!result.user || !result.profile) redirect("/login");
+  if (roles && !roles.includes(result.profile.role)) redirect("/");
   return result as typeof result & { profile: ProfileRow };
 }

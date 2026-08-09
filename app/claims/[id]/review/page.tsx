@@ -19,7 +19,7 @@ export default async function ClaimReviewPage({ params }: PageProps) {
       <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold">Review OCR result</h2>
-          <p className="text-muted-foreground">Claim: {claim.claim_no ?? claim.id}</p>
+          <p className="text-muted-foreground">รายการเบิก: {claim.claim_no ?? claim.id}</p>
         </div>
         <ClaimActions claimId={claim.id} canDelete={["DRAFT", "OCR_FAILED", "EXTRACTED", "REJECTED"].includes(claim.status)} />
       </div>

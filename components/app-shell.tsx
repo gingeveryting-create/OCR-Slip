@@ -10,11 +10,11 @@ const navByRole: Record<UserRole, Array<{ href: string; label: string; icon: Ele
   EMPLOYEE: [
     { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
     { href: "/claims/new", label: "อัปโหลดสลิป", icon: FilePlus2 },
-    { href: "/claims", label: "เคลมของฉัน", icon: Files }
+    { href: "/claims", label: "รายการเบิกของฉัน", icon: Files }
   ],
   FINANCE: [
     { href: "/finance", label: "ภาพรวมการเงิน", icon: LayoutDashboard },
-    { href: "/finance/claims", label: "ตรวจเคลม", icon: ClipboardCheck }
+    { href: "/finance/claims", label: "ตรวจรายการเบิก", icon: ClipboardCheck }
   ],
   ADMIN: [
     { href: "/admin/users", label: "ผู้ใช้", icon: Users },
@@ -46,8 +46,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   key={item.href}
                 >
-                  <Icon className="h-4 w-4" aria-hidden />
-                  {item.label}
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -57,18 +57,34 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </aside>
+
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
-          <div className="flex min-h-16 items-center justify-between px-4 sm:px-6">
-            <div>
-              <p className="text-sm text-muted-foreground">{profile.department ?? "Company"}</p>
-              <h1 className="text-base font-semibold">{profile.full_name ?? profile.email}</h1>
+          <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6">
+            <div className="min-w-0">
+              <p className="truncate text-sm text-muted-foreground">{profile.department ?? "Company"}</p>
+              <h1 className="truncate text-base font-semibold">{profile.full_name ?? profile.email}</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-md border px-3 py-1 text-xs font-medium">{profile.role}</span>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="rounded-md border px-2 py-1 text-xs font-medium sm:px-3">{profile.role}</span>
               <LogoutButton compact />
             </div>
           </div>
+          <nav className="mobile-nav-scroll flex gap-2 overflow-x-auto border-t px-4 py-2 lg:hidden">
+            {nav.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                  href={item.href}
+                  key={item.href}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="whitespace-nowrap">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </header>
         <main className="px-4 py-6 sm:px-6">{children}</main>
       </div>

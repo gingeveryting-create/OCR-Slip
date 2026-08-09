@@ -14,7 +14,7 @@ export async function GET() {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("claims");
     sheet.columns = [
-      { header: "Claim No", key: "claim_no", width: 18 },
+      { header: "เลขที่เบิก", key: "claim_no", width: 18 },
       { header: "Employee", key: "employee", width: 28 },
       { header: "Merchant", key: "merchant_name", width: 28 },
       { header: "Receipt Date", key: "receipt_date", width: 16 },

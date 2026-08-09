@@ -22,7 +22,7 @@ export default async function ClaimQrPage({ params }: PageProps) {
     <AppShell>
       <Card className="max-w-lg">
         <CardHeader>
-          <CardTitle>QR Code สำหรับตรวจสอบเคลม</CardTitle>
+          <CardTitle>QR Code สำหรับตรวจสอบรายการเบิก</CardTitle>
           <CardDescription>หน้านี้ต้อง login และตรวจสิทธิ์ก่อนแสดงข้อมูลเสมอ</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

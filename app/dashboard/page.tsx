@@ -3,12 +3,12 @@ import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createServerSupabase, requireProfile } from "@/lib/supabase/server";
+import { createServerSupabase, requirePageProfile } from "@/lib/supabase/server";
 import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
 export default async function DashboardPage() {
-  const { profile } = await requireProfile(["EMPLOYEE", "ADMIN"]);
+  const { profile } = await requirePageProfile(["EMPLOYEE", "ADMIN"]);
   const supabase = await createServerSupabase();
   const { data: claims } = await supabase
     .from("expense_claims")
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>เคลมล่าสุด</CardTitle>
+          <CardTitle>รายการเบิกล่าสุด</CardTitle>
           <CardDescription>รายการที่คุณสร้างหรือส่งเข้าตรวจแล้ว</CardDescription>
         </CardHeader>
         <CardContent>
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
             <table>
               <thead>
                 <tr>
-                  <th>เลขที่เคลม</th>
+                  <th>เลขที่เบิก</th>
                   <th>ร้านค้า</th>
                   <th>ยอดเงิน</th>
                   <th>สถานะ</th>

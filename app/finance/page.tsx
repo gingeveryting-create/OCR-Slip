@@ -4,7 +4,7 @@ import { FinanceClaimFilters } from "@/components/finance-claim-filters";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
+import { createAdminSupabase, requirePageProfile } from "@/lib/supabase/server";
 import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ type PageProps = {
     employee?: string;
     dateFrom?: string;
     dateTo?: string;
+    ids?: string;
   }>;
 };
 
@@ -38,8 +39,22 @@ type ClaimListRow = {
 const claimSelect =
   "id,claim_no,merchant_name,total_amount,currency,status,reject_reason,duplicate_score,receipt_date,created_at,employee_id,profiles!expense_claims_employee_id_fkey(full_name,email,department)";
 
-function applyCommonFilters(query: any, employeeIds: string[] | null, dateFrom: string, dateTo: string) {
+const uuidPattern = /^[0-9a-f-]{36}$/i;
+
+function parseClaimIds(value?: string) {
+  return Array.from(
+    new Set(
+      (value ?? "")
+        .split(",")
+        .map((id) => id.trim())
+        .filter((id) => uuidPattern.test(id))
+    )
+  ).slice(0, 50);
+}
+
+function applyCommonFilters(query: any, employeeIds: string[] | null, dateFrom: string, dateTo: string, claimIds: string[]) {
   let nextQuery = query;
+  if (claimIds.length) nextQuery = nextQuery.in("id", claimIds);
   if (employeeIds) {
     nextQuery = employeeIds.length
       ? nextQuery.in("employee_id", employeeIds)
@@ -101,11 +116,13 @@ function employeeSummary(claims: ClaimListRow[]) {
 }
 
 export default async function FinancePage({ searchParams }: PageProps) {
-  const { supabase } = await requireProfile(["FINANCE", "ADMIN"]);
+  const { supabase } = await requirePageProfile(["FINANCE", "ADMIN"]);
   const filters = (await searchParams) ?? {};
   const employee = filters.employee?.trim() ?? "";
   const dateFrom = filters.dateFrom?.trim() ?? "";
   const dateTo = filters.dateTo?.trim() ?? "";
+  const ids = filters.ids?.trim() ?? "";
+  const claimIds = parseClaimIds(ids);
 
   let employeeIds: string[] | null = null;
   if (employee) {
@@ -128,7 +145,8 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .limit(100),
     employeeIds,
     dateFrom,
-    dateTo
+    dateTo,
+    claimIds
   );
 
   const approvedQuery = applyCommonFilters(
@@ -140,7 +158,8 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .limit(100),
     employeeIds,
     dateFrom,
-    dateTo
+    dateTo,
+    claimIds
   );
 
   const rejectedQuery = applyCommonFilters(
@@ -152,7 +171,8 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .limit(100),
     employeeIds,
     dateFrom,
-    dateTo
+    dateTo,
+    claimIds
   );
 
   const summaryQuery = applyCommonFilters(
@@ -164,7 +184,8 @@ export default async function FinancePage({ searchParams }: PageProps) {
       .limit(500),
     employeeIds,
     dateFrom,
-    dateTo
+    dateTo,
+    claimIds
   );
 
   const [{ data: pendingClaims }, { data: approvedClaims }, { data: rejectedClaims }, { data: summaryClaims }] = await Promise.all([
@@ -196,11 +217,11 @@ export default async function FinancePage({ searchParams }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>ค้นหาเคลม</CardTitle>
+          <CardTitle>ค้นหารายการเบิก</CardTitle>
           <CardDescription>ค้นหาตามพนักงาน วันที่ใบเสร็จ หรือเปิดจาก QR ที่ employee ส่งให้</CardDescription>
         </CardHeader>
         <CardContent>
-          <FinanceClaimFilters employee={employee} dateFrom={dateFrom} dateTo={dateTo} />
+          <FinanceClaimFilters employee={employee} dateFrom={dateFrom} dateTo={dateTo} ids={ids} />
         </CardContent>
       </Card>
 
@@ -245,7 +266,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>สรุปรายการเบิกตามพนักงาน</CardTitle>
-          <CardDescription>รวมจำนวนเคลมและยอดเงิน แยกตามสถานะของแต่ละคน</CardDescription>
+          <CardDescription>รวมจำนวนรายการเบิกและยอดเงิน แยกตามสถานะของแต่ละคน</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="table-wrap table-section-summary">
@@ -291,17 +312,17 @@ export default async function FinancePage({ searchParams }: PageProps) {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>รายการรอตรวจ</CardTitle>
-          <CardDescription>Claim ที่ submitted หรืออยู่ระหว่าง finance review</CardDescription>
+          <CardDescription>รายการเบิกที่ส่งแล้วหรืออยู่ระหว่าง finance review</CardDescription>
         </CardHeader>
         <CardContent>
-          <ClaimTable claims={pending} emptyText="ไม่พบเคลมรอตรวจตามเงื่อนไข" actionLabel="Review" tone="pending" />
+          <ClaimTable claims={pending} emptyText="ไม่พบรายการเบิกรอตรวจตามเงื่อนไข" actionLabel="ตรวจรายการ" tone="pending" />
         </CardContent>
       </Card>
 
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>รายการอนุมัติแล้ว</CardTitle>
-          <CardDescription>Claim ที่อนุมัติแล้วหรือจ่ายเงินแล้ว ตามเงื่อนไขค้นหาปัจจุบัน</CardDescription>
+          <CardDescription>รายการเบิกที่อนุมัติแล้วหรือจ่ายเงินแล้ว ตามเงื่อนไขค้นหาปัจจุบัน</CardDescription>
         </CardHeader>
         <CardContent>
           <ClaimTable claims={approved} emptyText="ยังไม่มีรายการอนุมัติแล้วตามเงื่อนไข" actionLabel="ดูรายละเอียด" tone="approved" />
@@ -311,7 +332,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>รายการถูกปฏิเสธ</CardTitle>
-          <CardDescription>Claim ที่ถูก reject พร้อมเหตุผลที่จะแสดงให้พนักงานเห็น</CardDescription>
+          <CardDescription>รายการเบิกที่ถูก reject พร้อมเหตุผลที่จะแสดงให้พนักงานเห็น</CardDescription>
         </CardHeader>
         <CardContent>
           <ClaimTable claims={rejected} emptyText="ยังไม่มีรายการถูกปฏิเสธตามเงื่อนไข" actionLabel="ดูรายละเอียด" showRejectReason tone="rejected" />

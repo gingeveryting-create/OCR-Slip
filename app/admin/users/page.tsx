@@ -2,10 +2,10 @@ import { AdminUserRoleSelect } from "@/components/admin-user-role-select";
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireProfile } from "@/lib/supabase/server";
+import { requirePageProfile } from "@/lib/supabase/server";
 
 export default async function AdminUsersPage() {
-  const { supabase } = await requireProfile(["ADMIN"]);
+  const { supabase } = await requirePageProfile(["ADMIN"]);
   const { data: users } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
 
   return (

@@ -1,9 +1,9 @@
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireProfile } from "@/lib/supabase/server";
+import { requirePageProfile } from "@/lib/supabase/server";
 
 export default async function AuditLogsPage() {
-  const { supabase } = await requireProfile(["ADMIN"]);
+  const { supabase } = await requirePageProfile(["ADMIN"]);
   const { data } = await supabase
     .from("audit_logs")
     .select("*, profiles(email,full_name), expense_claims(claim_no)")

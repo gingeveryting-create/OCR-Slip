@@ -22,7 +22,7 @@ export default async function ClaimDetailPage({ params }: PageProps) {
     <AppShell>
       <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold">{claim.claim_no ?? "Draft Claim"}</h2>
+          <h2 className="text-2xl font-bold">{claim.claim_no ?? "รายการเบิกร่าง"}</h2>
           <p className="text-muted-foreground">{claim.merchant_name ?? "ยังไม่มีชื่อร้านค้า"}</p>
         </div>
         <div className="flex flex-wrap gap-2">

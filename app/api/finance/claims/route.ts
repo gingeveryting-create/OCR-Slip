@@ -8,6 +8,14 @@ export async function GET(request: Request) {
     const employee = url.searchParams.get("employee")?.trim() ?? "";
     const dateFrom = url.searchParams.get("dateFrom")?.trim() ?? "";
     const dateTo = url.searchParams.get("dateTo")?.trim() ?? "";
+    const claimIds = Array.from(
+      new Set(
+        (url.searchParams.get("ids") ?? "")
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => /^[0-9a-f-]{36}$/i.test(id))
+      )
+    ).slice(0, 50);
 
     let employeeIds: string[] | null = null;
     if (employee) {
@@ -30,6 +38,7 @@ export async function GET(request: Request) {
     if (employeeIds) {
       query = employeeIds.length ? query.in("employee_id", employeeIds) : query.eq("employee_id", "00000000-0000-0000-0000-000000000000");
     }
+    if (claimIds.length) query = query.in("id", claimIds);
     if (dateFrom) query = query.gte("receipt_date", dateFrom);
     if (dateTo) query = query.lte("receipt_date", dateTo);
 

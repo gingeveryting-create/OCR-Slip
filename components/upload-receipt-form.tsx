@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, FileUp, RotateCcw, ScanText } from "lucide-react";
+import { FileUp, ImageUp, RotateCcw, ScanText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -78,15 +78,18 @@ export function UploadReceiptForm() {
             ) : (
               <>
                 <FileUp className="mb-3 h-10 w-10 text-primary" aria-hidden />
-                <span className="font-medium">วางไฟล์ที่นี่ หรือกดเพื่อเลือกไฟล์</span>
+                <span className="font-medium">วางไฟล์ที่นี่ หรือกดปุ่มเพื่อเลือกรูปภาพ</span>
                 <span className="mt-1 text-sm text-muted-foreground">JPG, PNG, WEBP, HEIC, PDF ขนาดไม่เกิน 10MB</span>
+                <span className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium">
+                  <ImageUp className="h-4 w-4" aria-hidden />
+                  เลือกรูปภาพ / ถ่ายภาพ
+                </span>
               </>
             )}
             <input
               className="sr-only"
               type="file"
               accept="image/*,application/pdf"
-              capture="environment"
               onChange={(event) => selectFile(event.target.files?.[0])}
             />
           </label>
@@ -95,11 +98,11 @@ export function UploadReceiptForm() {
       <Card>
         <CardHeader>
           <CardTitle>ขั้นตอน OCR</CardTitle>
-          <CardDescription>อัปโหลดก่อน จากนั้นเริ่มอ่านข้อมูลด้วย AI</CardDescription>
+          <CardDescription>อัปโหลดก่อน จากนั้นเริ่มอ่านข้อมูลด้วย OCR/AI</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button className="w-full" onClick={upload} disabled={!file || status.includes("อัปโหลด")}>
-            <Camera className="h-4 w-4" aria-hidden />
+            <FileUp className="h-4 w-4" aria-hidden />
             อัปโหลดไฟล์
           </Button>
           <Button className="w-full" onClick={extract} disabled={!claimId || status === "OCR_PROCESSING"}>

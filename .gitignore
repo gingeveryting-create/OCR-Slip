@@ -10,6 +10,9 @@ cloudflare-env.d.ts
 scripts/seed-users.mjs
 *.traineddata
 dev-server*.log
+cloudflared*.log
 dist
 coverage
 *.tsbuildinfo
+tools/
+.agents/

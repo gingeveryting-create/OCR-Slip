@@ -18,70 +18,128 @@ declare global {
   }
 }
 
-function claimIdFromQr(value: string) {
+function qrTargetFromValue(value: string) {
   const trimmed = value.trim();
+  const batchMatch = trimmed.match(/[?&]ids=([^&#]+)/i);
+  if (batchMatch?.[1]) {
+    const ids = decodeURIComponent(batchMatch[1])
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+    if (ids.length) return { type: "batch" as const, ids };
+  }
+
   const match = trimmed.match(/\/claims\/([0-9a-f-]{36})\/qr/i) ?? trimmed.match(/\/finance\/claims\/([0-9a-f-]{36})/i);
-  if (match?.[1]) return match[1];
-  if (/^[0-9a-f-]{36}$/i.test(trimmed)) return trimmed;
+  if (match?.[1]) return { type: "single" as const, id: match[1] };
+  if (/^[0-9a-f-]{36}$/i.test(trimmed)) return { type: "single" as const, id: trimmed };
   return null;
 }
 
 export function FinanceClaimFilters({
   employee,
   dateFrom,
-  dateTo
+  dateTo,
+  ids
 }: {
   employee?: string;
   dateFrom?: string;
   dateTo?: string;
+  ids?: string;
 }) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [qrValue, setQrValue] = useState("");
+  const scanFrameRef = useRef<number | null>(null);
+  const [qrValue, setQrValue] = useState(ids ? `/finance/claims?ids=${ids}` : "");
   const [scanMessage, setScanMessage] = useState("");
   const [scanning, setScanning] = useState(false);
   const [decodingImage, setDecodingImage] = useState(false);
 
   function openQrClaim(value = qrValue) {
-    const id = claimIdFromQr(value);
-    if (!id) {
-      setScanMessage("ไม่พบ claim id ใน QR/URL นี้");
+    const target = qrTargetFromValue(value);
+    if (!target) {
+      setScanMessage("ไม่พบเลขอ้างอิงหรือรายการเบิกใน QR/URL นี้");
       return;
     }
-    router.push(`/finance/claims/${id}`);
+    if (target.type === "batch") {
+      router.push(`/finance/claims?ids=${encodeURIComponent(target.ids.join(","))}`);
+      return;
+    }
+    router.push(`/finance/claims/${target.id}`);
   }
 
   async function startScan() {
-    if (!window.BarcodeDetector) {
-      setScanMessage("Browser นี้ยังไม่รองรับ QR scanner ให้ใช้ช่องวาง URL/claim id แทน");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScanMessage("Browser นี้ไม่รองรับการเปิดกล้อง ให้ใช้แนบรูป QR หรือวาง URL แทน");
       return;
     }
+
     setScanning(true);
     setScanMessage("กำลังเปิดกล้อง...");
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-    streamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-    }
-    const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
-    setScanMessage("เล็งกล้องไปที่ QR ของ claim");
-
-    const scanLoop = async () => {
-      if (!videoRef.current || !streamRef.current) return;
-      const codes = await detector.detect(videoRef.current);
-      if (codes[0]?.rawValue) {
-        stopScan();
-        openQrClaim(codes[0].rawValue);
-        return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
-      requestAnimationFrame(scanLoop);
-    };
-    requestAnimationFrame(scanLoop);
+      setScanMessage("เล็งกล้องไปที่ QR ของรายการเบิก");
+      scanFrameRef.current = requestAnimationFrame(scanLoop);
+    } catch (error) {
+      setScanning(false);
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+      setScanMessage(message.includes("permission") || message.includes("denied") ? "ไม่ได้รับสิทธิ์ใช้กล้อง กรุณาอนุญาตกล้องใน browser" : "เปิดกล้องไม่สำเร็จ ให้ใช้แนบรูป QR หรือวาง URL แทน");
+    }
+  }
+
+  async function scanLoop() {
+    const video = videoRef.current;
+    if (!video || !streamRef.current) return;
+
+    try {
+      if (window.BarcodeDetector) {
+        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+        const codes = await detector.detect(video);
+        if (codes[0]?.rawValue) {
+          stopScan();
+          openQrClaim(codes[0].rawValue);
+          return;
+        }
+      } else if (video.videoWidth > 0 && video.videoHeight > 0) {
+        const canvas = document.createElement("canvas");
+        const maxSize = 900;
+        const scale = Math.min(1, maxSize / Math.max(video.videoWidth, video.videoHeight));
+        canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+        canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        if (context) {
+          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code?.data) {
+            stopScan();
+            openQrClaim(code.data);
+            return;
+          }
+        }
+      }
+    } catch {
+      // Ignore transient decode errors while the camera is moving.
+    }
+
+    scanFrameRef.current = requestAnimationFrame(scanLoop);
   }
 
   function stopScan() {
+    if (scanFrameRef.current) cancelAnimationFrame(scanFrameRef.current);
+    scanFrameRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setScanning(false);
@@ -104,7 +162,7 @@ export function FinanceClaimFilters({
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, imageData.width, imageData.height);
       if (!code?.data) {
-        setScanMessage("อ่าน QR จากรูปไม่สำเร็จ ลอง crop ให้เห็น QR ชัดขึ้น หรือวาง URL/Claim ID แทน");
+        setScanMessage("อ่าน QR จากรูปไม่สำเร็จ ลอง crop ให้เห็น QR ชัดขึ้น หรือวาง URL/เลขอ้างอิงแทน");
         return;
       }
       setQrValue(code.data);
@@ -144,17 +202,17 @@ export function FinanceClaimFilters({
 
       <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto]">
         <div className="space-y-2">
-          <Label htmlFor="qrValue">QR / Claim URL / Claim ID</Label>
+          <Label htmlFor="qrValue">QR / URL รายการเบิก / เลขอ้างอิง</Label>
           <Input
             id="qrValue"
             value={qrValue}
             onChange={(event) => setQrValue(event.target.value)}
-            placeholder="วาง URL จาก QR หรือ claim id"
+            placeholder="วาง URL จาก QR, เลขอ้างอิง หรือ QR รวมหลายรายการ"
           />
         </div>
         <div className="flex items-end">
           <Button type="button" variant="outline" onClick={() => openQrClaim()}>
-            เปิดเคลม
+            เปิดรายการเบิก
           </Button>
         </div>
         <div className="flex items-end">

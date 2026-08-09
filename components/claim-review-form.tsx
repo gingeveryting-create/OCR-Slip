@@ -153,7 +153,7 @@ export function ClaimReviewForm({ claim, signedUrl }: { claim: any; signedUrl: s
             </Button>
             <Button onClick={submit} disabled={saving}>
               <Send className="h-4 w-4" aria-hidden />
-              Submit Claim
+              ส่งรายการเบิก
             </Button>
           </div>
         </CardContent>

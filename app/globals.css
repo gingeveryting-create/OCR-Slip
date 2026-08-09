@@ -106,3 +106,69 @@ thead {
 tbody tr + tr {
   border-top: 1px solid hsl(var(--border));
 }
+
+.mobile-nav-scroll {
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mobile-nav-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  .no-print,
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  main,
+  .print-sheet {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .print-sheet {
+    padding: 0 !important;
+  }
+
+  .print-sheet .rounded-lg,
+  .print-sheet .rounded-md {
+    border-radius: 0 !important;
+  }
+
+  .print-sheet .shadow-sm {
+    box-shadow: none !important;
+  }
+
+  .print-sheet table {
+    page-break-inside: auto;
+  }
+
+  .print-sheet tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-sheet th,
+  .print-sheet td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+}

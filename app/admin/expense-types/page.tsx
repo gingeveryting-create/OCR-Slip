@@ -2,10 +2,10 @@ import { AppShell } from "@/components/app-shell";
 import { MasterDataForm } from "@/components/master-data-form";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireProfile } from "@/lib/supabase/server";
+import { requirePageProfile } from "@/lib/supabase/server";
 
 export default async function ExpenseTypesPage() {
-  const { supabase } = await requireProfile(["ADMIN"]);
+  const { supabase } = await requirePageProfile(["ADMIN"]);
   const { data } = await supabase.from("expense_types").select("*").order("code");
   return (
     <AppShell>
