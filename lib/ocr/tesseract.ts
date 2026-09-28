@@ -6,6 +6,10 @@ function emptyField<T extends string | number | null>(value: T = null as T, conf
   return { value, confidence };
 }
 
+function compactOcrSpacing(value: string) {
+  return value.replace(/([\u0E00-\u0E7F])\s+(?=[\u0E00-\u0E7F])/g, "$1");
+}
+
 function normalizeAmount(value?: string | null) {
   if (!value) return null;
   const amount = extractAmounts(value)[0];
@@ -46,7 +50,9 @@ function extractAmounts(text?: string | null) {
     .replace(/[๖]/g, "6")
     .replace(/[๗]/g, "7")
     .replace(/[๘]/g, "8")
-    .replace(/[๙]/g, "9");
+    .replace(/[๙]/g, "9")
+    // Receipt printers often make Tesseract lose the decimal mark: "168.00" -> "168 00".
+    .replace(/(\d{2,6})\s+(\d{2})(?=$|[^\d])/g, "$1.$2");
   const matches = Array.from(normalized.matchAll(/(?:^|[^\d])(\d{1,3}(?:[,.]\d{3})+[,.]\d{2}|\d{1,6}[,.]\d{2}|\d{2,6})(?=$|[^\d])/g));
   return matches
     .map((match) => parseAmountToken(match[1]))
@@ -83,8 +89,8 @@ function largestDecimalAmount(text: string) {
 }
 
 function amountFromTotalishLines(lines: string[]) {
-  const totalish = /total|amount|balance|grand|net|due|sum|รวม|ยอด|สุทธิ|ทั้งหมด|ชำระ|ชําระ|ทั้ง\s*หมด/i;
-  const candidateLines = lines.filter((line) => totalish.test(line));
+  const totalish = /total|amount|balance|grand|net|due|sum|รวม|ราม|ยอด|สุทธิ|ทั้งหมด|ชำระ|ชําระ|ทั้ง\s*หมด/i;
+  const candidateLines = lines.filter((line) => totalish.test(compactOcrSpacing(line)));
   const direct = candidateLines
     .map((line) => lastAmountOnLine(line))
     .filter((amount): amount is number => amount != null);
@@ -102,7 +108,7 @@ function currencyAmount(text: string) {
 function amountNear(lines: string[], patterns: RegExp[], options: { lookAhead?: number; max?: number } = {}) {
   const lookAhead = options.lookAhead ?? 0;
   for (const pattern of patterns) {
-    const index = lines.findIndex((item) => pattern.test(item));
+    const index = lines.findIndex((item) => pattern.test(item) || pattern.test(compactOcrSpacing(item)));
     if (index < 0) continue;
     for (let offset = 0; offset <= lookAhead; offset += 1) {
       const amount = lastAmountOnLine(lines[index + offset]);
@@ -113,7 +119,7 @@ function amountNear(lines: string[], patterns: RegExp[], options: { lookAhead?: 
 }
 
 function amountAfterLine(lines: string[], anchor: RegExp, options: { lookAhead?: number; min?: number; max?: number } = {}) {
-  const index = lines.findIndex((item) => anchor.test(item));
+  const index = lines.findIndex((item) => anchor.test(item) || anchor.test(compactOcrSpacing(item)));
   if (index < 0) return null;
   const lookAhead = options.lookAhead ?? 3;
   const min = options.min ?? 1;
@@ -125,11 +131,12 @@ function amountAfterLine(lines: string[], anchor: RegExp, options: { lookAhead?:
 }
 
 function amountNearText(text: string, anchor: RegExp, options: { chars?: number; min?: number; max?: number } = {}) {
-  const match = anchor.exec(text);
+  const searchableText = compactOcrSpacing(text);
+  const match = anchor.exec(searchableText);
   if (!match) return null;
   const chars = options.chars ?? 100;
   const min = options.min ?? 1;
-  const window = text.slice(match.index, match.index + chars);
+  const window = searchableText.slice(match.index, match.index + chars);
   const amounts = extractAmounts(window).filter((amount) => amount >= min && (options.max == null || amount <= options.max));
   if (!amounts.length) return null;
   return amounts[0];
