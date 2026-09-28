@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import jsQR from "jsqr";
 import { Camera, ImageUp, Search, X } from "lucide-react";
@@ -195,7 +196,7 @@ export function FinanceClaimFilters({
             ค้นหา
           </Button>
           <Button asChild type="button" variant="outline">
-            <a href="/finance/claims">ล้าง</a>
+            <Link href="/finance/claims">ล้าง</Link>
           </Button>
         </div>
       </form>

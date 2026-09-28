@@ -34,7 +34,20 @@ function parseAmountToken(token: string) {
 
 function extractAmounts(text?: string | null) {
   if (!text) return [];
-  const matches = Array.from(text.matchAll(/(?:^|[^\d])(\d{1,3}(?:[,.]\d{3})+[,.]\d{2}|\d{1,6}[,.]\d{2}|\d{2,6})(?=$|[^\d])/g));
+  const normalized = text
+    .replace(/[Oo]/g, "0")
+    .replace(/[Il|]/g, "1")
+    .replace(/[๐]/g, "0")
+    .replace(/[๑]/g, "1")
+    .replace(/[๒]/g, "2")
+    .replace(/[๓]/g, "3")
+    .replace(/[๔]/g, "4")
+    .replace(/[๕]/g, "5")
+    .replace(/[๖]/g, "6")
+    .replace(/[๗]/g, "7")
+    .replace(/[๘]/g, "8")
+    .replace(/[๙]/g, "9");
+  const matches = Array.from(normalized.matchAll(/(?:^|[^\d])(\d{1,3}(?:[,.]\d{3})+[,.]\d{2}|\d{1,6}[,.]\d{2}|\d{2,6})(?=$|[^\d])/g));
   return matches
     .map((match) => parseAmountToken(match[1]))
     .filter((amount): amount is number => amount != null && amount >= 10);
@@ -111,6 +124,20 @@ function amountAfterLine(lines: string[], anchor: RegExp, options: { lookAhead?:
   return null;
 }
 
+function amountNearText(text: string, anchor: RegExp, options: { chars?: number; min?: number; max?: number } = {}) {
+  const match = anchor.exec(text);
+  if (!match) return null;
+  const chars = options.chars ?? 100;
+  const min = options.min ?? 1;
+  const window = text.slice(match.index, match.index + chars);
+  const amounts = extractAmounts(window).filter((amount) => amount >= min && (options.max == null || amount <= options.max));
+  if (!amounts.length) return null;
+  return amounts[0];
+}
+
+const transferAmountAnchor = /จำนวน|จํานวน|จ\s*[ํำ]\s*า\s*น\s*ว\s*น|amount/i;
+const transferFeeAnchor = /ค่าธรรมเนียม|ค\s*่\s*า\s*ธ\s*ร\s*ร\s*ม\s*เ\s*น\s*ี\s*ย\s*ม|fee/i;
+
 function findFirst(text: string, patterns: RegExp[]) {
   for (const pattern of patterns) {
     const match = text.match(pattern);
@@ -122,6 +149,43 @@ function findFirst(text: string, patterns: RegExp[]) {
 function parseDate(text: string) {
   const iso = text.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
   if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+
+  const thaiMonths: Record<string, string> = {
+    "ม.ค.": "01",
+    "มค": "01",
+    "ก.พ.": "02",
+    "กพ": "02",
+    "มี.ค.": "03",
+    "มีค": "03",
+    "เม.ย.": "04",
+    "เมย": "04",
+    "พ.ค.": "05",
+    "พค": "05",
+    "มิ.ย.": "06",
+    "มิย": "06",
+    "ก.ค.": "07",
+    "กค": "07",
+    "ส.ค.": "08",
+    "สค": "08",
+    "ก.ย.": "09",
+    "กย": "09",
+    "ต.ค.": "10",
+    "ตค": "10",
+    "พ.ย.": "11",
+    "พย": "11",
+    "ธ.ค.": "12",
+    "ธค": "12"
+  };
+  const thaiDate = text.match(/\b(\d{1,2})\s*(ม\.?ค\.?|ก\.?พ\.?|มี\.?ค\.?|เม\.?ย\.?|พ\.?ค\.?|มิ\.?ย\.?|ก\.?ค\.?|ส\.?ค\.?|ก\.?ย\.?|ต\.?ค\.?|พ\.?ย\.?|ธ\.?ค\.?)\s*(\d{2,4})\b/);
+  if (thaiDate) {
+    let year = Number(thaiDate[3]);
+    if (year >= 50 && year < 100) year = 2500 + year - 543;
+    else if (year < 100) year += 2000;
+    if (year > 2400) year -= 543;
+    const monthKey = thaiDate[2].replace(/\s/g, "");
+    const month = thaiMonths[monthKey] ?? thaiMonths[monthKey.replace(/\./g, "")] ?? "01";
+    return `${year}-${month}-${thaiDate[1].padStart(2, "0")}`;
+  }
 
   const dmy = text.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})\b/);
   if (!dmy) return null;
@@ -157,18 +221,39 @@ function detectPaymentMethod(text: string) {
 }
 
 function detectBankName(text: string) {
-  if (/bangkok\s*bank|à¸˜à¸™à¸²à¸„à¸²à¸£à¸à¸£à¸¸à¸‡à¹€à¸—à¸ž/i.test(text)) return "Bangkok Bank";
-  if (/kasikorn|kbank|à¸à¸ªà¸´à¸à¸£/i.test(text)) return "Kasikorn Bank";
+  if (/bangkok\s*bank|ธนาคารกรุงเทพ|กรุงเทพ/i.test(text)) return "Bangkok Bank";
+  if (/kasikorn|kbank|k\+|กสิกร/i.test(text)) return "Kasikorn Bank";
   if (/siam\s*commercial|scb|à¹„à¸—à¸¢à¸žà¸²à¸“à¸´à¸Šà¸¢à¹Œ/i.test(text)) return "SCB";
   if (/krungthai|à¸à¸£à¸¸à¸‡à¹„à¸—à¸¢/i.test(text)) return "Krungthai Bank";
   if (/krungsri|à¸à¸£à¸¸à¸‡à¸¨à¸£à¸µ/i.test(text)) return "Krungsri";
-  if (/ttb|à¸—à¸«à¸²à¸£à¹„à¸—à¸¢|à¸˜à¸™à¸Šà¸²à¸•/i.test(text)) return "TTB";
+  if (/ttb|ทหารไทย|ธนชาติ|ทหารไทยธนชาติ/i.test(text)) return "TTB";
   return null;
 }
 
+function bankSlipSignalScore(text: string) {
+  let score = 0;
+  if (/โอนเงินสำเร็จ|โอนเงินสําเร็จ|โอน.*สำเร็จ|transfer\s*successful/i.test(text)) score += 4;
+  if (/k\s*\+|i\s*<\s*\+|scb\s*easy|krungthai\s*next|promptpay|พร้อมเพย์/i.test(text)) score += 2;
+  if (/สแกนตรวจสอบสลิป|ตรวจสอบสลิป|scan.*slip/i.test(text)) score += 2;
+  if (/เลขที่รายการ|เลขทีรายการ|transaction\s*(id)?/i.test(text)) score += 1;
+  if (transferAmountAnchor.test(text)) score += 1;
+  if (transferFeeAnchor.test(text)) score += 1;
+  if ((text.match(/(?:x{2,}|\*{2,}|X{2,})[-xX*\d]+/g) ?? []).length >= 2) score += 2;
+  if ((text.match(/ธ\.|ธนาคาร|kasikorn|kbank|กรุง|กสิกร|ทหารไทย|ธนชาติ|ttb|scb|bangkok\s*bank/gi) ?? []).length >= 1) score += 1;
+
+  if (/\btotal\b|subtotal|tax\s*invoice|tax\s*payer|vat|receipt|cashier|table|server|customer\s*copy|merchant\s*copy|pos|ใบเสร็จ|ใบกำกับ|ภาษี|ยอดรวม/i.test(text)) score -= 2;
+  return score;
+}
+
+function isBankSlipText(text: string) {
+  if (/โอนเงินสำเร็จ|โอนเงินสําเร็จ|transfer\s*successful/i.test(text)) return true;
+  return bankSlipSignalScore(text) >= 4;
+}
+
 function detectDocumentType(text: string) {
+  if (isBankSlipText(text)) return "BANK_SLIP";
   if (/\bSALE\b|merchant\s*copy|customer\s*copy|\btrace\b|\bapp\s*code\b|\btid\b|\bmid\b/i.test(text)) return "POS_RECEIPT";
-  if (/transfer|transaction|sender|receiver|à¸žà¸£à¹‰à¸­à¸¡à¹€à¸žà¸¢à¹Œ|promptpay/i.test(text)) return "BANK_SLIP";
+  if (/(transfer|sender|receiver|พร้อมเพย์|promptpay)/i.test(text) && bankSlipSignalScore(text) >= 3) return "BANK_SLIP";
   if (/à¹ƒà¸š\s*à¸£à¸±à¸š\s*à¹€à¸‡à¸´à¸™|à¹ƒà¸š à¸£ à¸± à¸š à¹€à¸‡ à¸´ à¸™|à¸ˆà¸³à¸™à¸§à¸™à¹€à¸‡à¸´à¸™à¸£à¸§à¸¡|à¸ˆ à¹ à¸² à¸™ à¸§ à¸™ à¹€à¸‡ à¸´ à¸™ à¸£ à¸§ à¸¡/i.test(text)) return "RECEIPT";
   if (/electric|à¹„à¸Ÿà¸Ÿà¹‰à¸²|à¸„à¹ˆà¸²à¹„à¸Ÿ|due\s*date|amount/i.test(text)) return "RECEIPT";
   if (/fuel|à¸™à¹‰à¸³à¸¡à¸±à¸™|à¸›à¸±à¹Šà¸¡/i.test(text)) return "FUEL_RECEIPT";
@@ -178,12 +263,112 @@ function detectDocumentType(text: string) {
   return "RECEIPT";
 }
 
+function cleanThaiName(line?: string | null) {
+  if (!line) return null;
+  const cleaned = line
+    .replace(/^(จาก|ไปยัง|ผู้โอน|ผู้รับ|ชื่อ)\s*[:：-]?\s*/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned || /ธนาคาร|เลขที่|รายการ|จำนวน|ค่าธรรมเนียม|บาท|สแกน|k\+/i.test(cleaned)) return null;
+  return cleaned;
+}
+
+function accountOnLine(line?: string | null) {
+  if (!line) return null;
+  const match = line.match(/(?:x{2,}|\*{2,}|X{2,})[-xX*\d]+(?:-\w+)?/);
+  return match?.[0] ?? null;
+}
+
+function bankNameOnLine(line?: string | null) {
+  if (!line) return null;
+  return detectBankName(line) ?? (/ธนาคาร/i.test(line) ? line.replace(/^ร\.?\s*/i, "").trim() : null);
+}
+
+function nearbyName(lines: string[], index: number, direction: -1 | 1) {
+  for (let offset = 1; offset <= 3; offset += 1) {
+    const name = cleanThaiName(lines[index + direction * offset]);
+    if (name) return name;
+  }
+  return null;
+}
+
+function nearbyAccount(lines: string[], index: number) {
+  for (let offset = 0; offset <= 3; offset += 1) {
+    const account = accountOnLine(lines[index + offset]);
+    if (account) return account;
+  }
+  return null;
+}
+
+function parseBankSlipFields(rawText: string, confidence: number): OcrExtractionResult {
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const joined = lines.join("\n");
+  const bankLineIndexes = lines
+    .map((line, index) => ({ line, index, bank: bankNameOnLine(line) }))
+    .filter((item) => item.bank);
+  const senderBankLine = bankLineIndexes[0] ?? null;
+  const receiverBankLine = bankLineIndexes[1] ?? null;
+  const totalAmount =
+    amountAfterLine(lines, transferAmountAnchor, { lookAhead: 4, min: 1, max: 1_000_000 }) ??
+    amountNear(lines, [transferAmountAnchor], { lookAhead: 3, max: 1_000_000 }) ??
+    amountNearText(joined, transferAmountAnchor, { chars: 180, min: 1, max: 1_000_000 }) ??
+    amountNearText(joined, /เลขที่รายการ|เลขทีรายการ|transaction/i, { chars: 240, min: 1, max: 1_000_000 });
+  const feeAmount = amountAfterLine(lines, transferFeeAnchor, { lookAhead: 4, min: 0, max: 100_000 });
+  const transactionId = findFirst(joined, [
+    /(?:เลขที่รายการ|เลขทีรายการ|transaction\s*id|transaction|ref(?:erence)?(?:\s*no)?)[^\dA-Z]*([A-Z0-9]{8,40})/i,
+    /\b([A-Z0-9]{12,40})\b/
+  ]);
+  const time = findFirst(joined, [/\b(\d{1,2}:\d{2})(?::\d{2})?\s*(?:น\.?|AM|PM)?\b/i]);
+  const receiptDate = parseDate(joined);
+  const senderName = senderBankLine ? nearbyName(lines, senderBankLine.index, -1) : null;
+  const receiverName = receiverBankLine ? nearbyName(lines, receiverBankLine.index, -1) : null;
+  const senderAccount = senderBankLine ? nearbyAccount(lines, senderBankLine.index) : null;
+  const receiverAccount = receiverBankLine ? nearbyAccount(lines, receiverBankLine.index) : null;
+  const sourceBank = senderBankLine?.bank ?? detectBankName(joined);
+
+  return {
+    documentType: "BANK_SLIP",
+    documentTypeConfidence: Math.max(confidence, 0.75),
+    fields: {
+      merchantName: emptyField(receiverName, receiverName ? 0.55 : 0.2),
+      receiptNo: emptyField(null, 0.2),
+      taxInvoiceNo: emptyField(null, 0.2),
+      receiptDate: emptyField(receiptDate, receiptDate ? 0.7 : 0.25),
+      receiptTime: emptyField(time, time ? 0.7 : 0.25),
+      totalAmount: emptyField(totalAmount, totalAmount != null ? 0.75 : 0.25),
+      amountBeforeVat: emptyField(null, 0.2),
+      vatAmount: emptyField(null, 0.2),
+      taxId: emptyField(null, 0.2),
+      branchNo: emptyField(null, 0.2),
+      address: emptyField(null, 0.2),
+      paymentMethod: emptyField("Bank transfer", 0.75),
+      bankName: emptyField(sourceBank, sourceBank ? 0.7 : 0.25),
+      senderName: emptyField(senderName, senderName ? 0.55 : 0.2),
+      senderAccount: emptyField(senderAccount, senderAccount ? 0.65 : 0.2),
+      receiverName: emptyField(receiverName, receiverName ? 0.55 : 0.2),
+      receiverAccount: emptyField(receiverAccount, receiverAccount ? 0.65 : 0.2),
+      transactionId: emptyField(transactionId, transactionId ? 0.75 : 0.25),
+      referenceNo: emptyField(transactionId, transactionId ? 0.7 : 0.25),
+      qrData: emptyField(null, 0.2),
+      currency: emptyField("THB", 0.8)
+    },
+    rawText,
+    warnings: [
+      `Detected as a bank transfer slip using local Tesseract OCR. Please verify sender, receiver, transaction reference, and amount because image OCR can misread Thai text.${feeAmount != null ? ` Transfer fee detected: ${feeAmount}.` : ""}`
+    ]
+  };
+}
+
 function parseReceiptFields(rawText: string, confidence: number): OcrExtractionResult {
   const lines = rawText
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
   const joined = lines.join("\n");
+  if (isBankSlipText(joined)) return parseBankSlipFields(rawText, confidence);
   const isUtilityBill = /electric|ไฟฟ้า|ค่าไฟ|การไฟฟ้า/i.test(joined);
 
   const merchantLine =

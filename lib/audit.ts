@@ -9,7 +9,7 @@ export async function writeAuditLog(input: {
   remark?: string | null;
 }) {
   const supabase = createAdminSupabase();
-  await supabase.from("audit_logs").insert({
+  const { error } = await supabase.from("audit_logs").insert({
     claim_id: input.claimId ?? null,
     action: input.action,
     old_value: input.oldValue ?? null,
@@ -17,4 +17,5 @@ export async function writeAuditLog(input: {
     performed_by: input.performedBy,
     remark: input.remark ?? null
   });
+  if (error) throw error;
 }

@@ -3,8 +3,20 @@ import { redirect } from "next/navigation";
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { ApiError } from "@/lib/api";
 import { getServerEnv } from "@/lib/env";
 import type { ProfileRow, UserRole } from "@/types/database";
+
+function reportSupabaseError(
+  operation: string,
+  error: { message: string; code?: string; status?: number }
+) {
+  console.error(`[Supabase] ${operation} failed`, {
+    code: error.code,
+    status: error.status,
+    message: error.message
+  });
+}
 
 export async function createServerSupabase() {
   const env = getServerEnv();
@@ -39,17 +51,41 @@ export function createAdminSupabase() {
 export async function getCurrentProfile() {
   const supabase = await createServerSupabase();
   const {
-    data: { user }
+    data: { user },
+    error: userError
   } = await supabase.auth.getUser();
+
+  if (userError) {
+    if (
+      userError.name === "AuthSessionMissingError" ||
+      userError.message.toLowerCase().includes("auth session missing")
+    ) {
+      return { user: null, profile: null, supabase };
+    }
+    reportSupabaseError("auth.getUser", userError);
+    throw new ApiError(
+      "ไม่สามารถเชื่อมต่อระบบบัญชีผู้ใช้ได้ กรุณาตรวจสอบ Supabase แล้วลองใหม่",
+      503,
+      "SUPABASE_AUTH_UNAVAILABLE"
+    );
+  }
 
   if (!user) return { user: null, profile: null, supabase };
 
-  const admin = createAdminSupabase();
-  const { data: profile } = await admin
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id,email,full_name,department,role")
     .eq("id", user.id)
-    .single<ProfileRow>();
+    .maybeSingle<ProfileRow>();
+
+  if (profileError) {
+    reportSupabaseError("profiles.select", profileError);
+    throw new ApiError(
+      `โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ (${profileError.code ?? "unknown"})`,
+      503,
+      "SUPABASE_PROFILE_QUERY_FAILED"
+    );
+  }
 
   return { user, profile, supabase };
 }

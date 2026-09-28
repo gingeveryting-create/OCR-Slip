@@ -19,7 +19,7 @@ export default async function ClaimQrPage({ params }: PageProps) {
   const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 360 });
 
   return (
-    <AppShell>
+    <AppShell variant="employee">
       <Card className="max-w-lg">
         <CardHeader>
           <CardTitle>QR Code สำหรับตรวจสอบรายการเบิก</CardTitle>

@@ -1,3 +1,4 @@
+import { AdminCreateUserForm } from "@/components/admin-create-user-form";
 import { AdminUserRoleSelect } from "@/components/admin-user-role-select";
 import { AppShell } from "@/components/app-shell";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,15 @@ export default async function AdminUsersPage() {
 
   return (
     <AppShell>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>สร้างผู้ใช้</CardTitle>
+          <CardDescription>กำหนด Role และรหัสผ่านเริ่มต้นสำหรับบัญชีใหม่</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AdminCreateUserForm />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>จัดการผู้ใช้</CardTitle>

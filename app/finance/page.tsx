@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertCircle, CalendarDays, Eye, UserRound } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FinanceClaimFilters } from "@/components/finance-claim-filters";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,16 @@ function parseClaimIds(value?: string) {
         .filter((id) => uuidPattern.test(id))
     )
   ).slice(0, 50);
+}
+
+function financeListHref(filters: { employee?: string; dateFrom?: string; dateTo?: string; ids?: string }) {
+  const params = new URLSearchParams();
+  if (filters.employee) params.set("employee", filters.employee);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.ids) params.set("ids", filters.ids);
+  const query = params.toString();
+  return query ? `/finance/claims?${query}` : "/finance/claims";
 }
 
 function applyCommonFilters(query: any, employeeIds: string[] | null, dateFrom: string, dateTo: string, claimIds: string[]) {
@@ -202,6 +213,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
   const perEmployee = employeeSummary(summary);
   const approvedAmount = sumAmount(approved);
   const pendingAmount = sumAmount(pending);
+  const returnHref = financeListHref({ employee, dateFrom, dateTo, ids });
 
   return (
     <AppShell>
@@ -269,7 +281,49 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <CardDescription>รวมจำนวนรายการเบิกและยอดเงิน แยกตามสถานะของแต่ละคน</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="table-wrap table-section-summary">
+          <div className="divide-y md:hidden">
+            {perEmployee.map((row) => (
+              <article key={row.employee} className="py-4 first:pt-0 last:pb-0">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <UserRound className="h-5 w-5" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="break-words font-semibold">{row.employee}</h3>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{row.department}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-muted-foreground">ยอดรวม</p>
+                    <p className="mt-1 font-bold tabular-nums">{formatMoney(row.totalAmount)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-md bg-amber-50 p-3 text-amber-900">
+                    <p className="text-xs">รอตรวจ</p>
+                    <p className="mt-1 font-semibold">{row.submitted} รายการ</p>
+                  </div>
+                  <div className="rounded-md bg-emerald-50 p-3 text-emerald-900">
+                    <p className="text-xs">อนุมัติ / จ่ายแล้ว</p>
+                    <p className="mt-1 font-semibold">{row.approved + row.paid} รายการ</p>
+                  </div>
+                  <div className="rounded-md bg-red-50 p-3 text-red-900">
+                    <p className="text-xs">ปฏิเสธ</p>
+                    <p className="mt-1 font-semibold">{row.rejected} รายการ</p>
+                  </div>
+                  <div className="rounded-md bg-muted p-3">
+                    <p className="text-xs text-muted-foreground">ยอดอนุมัติ</p>
+                    <p className="mt-1 font-semibold tabular-nums">{formatMoney(row.approvedAmount)}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+            {perEmployee.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">ยังไม่มีข้อมูลสรุปตามเงื่อนไข</p>
+            ) : null}
+          </div>
+
+          <div className="table-wrap table-section-summary hidden md:block">
             <table>
               <thead>
                 <tr>
@@ -315,7 +369,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <CardDescription>รายการเบิกที่ส่งแล้วหรืออยู่ระหว่าง finance review</CardDescription>
         </CardHeader>
         <CardContent>
-          <ClaimTable claims={pending} emptyText="ไม่พบรายการเบิกรอตรวจตามเงื่อนไข" actionLabel="ตรวจรายการ" tone="pending" />
+          <ClaimTable claims={pending} emptyText="ไม่พบรายการเบิกรอตรวจตามเงื่อนไข" actionLabel="ตรวจรายการ" tone="pending" returnHref={returnHref} />
         </CardContent>
       </Card>
 
@@ -325,7 +379,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <CardDescription>รายการเบิกที่อนุมัติแล้วหรือจ่ายเงินแล้ว ตามเงื่อนไขค้นหาปัจจุบัน</CardDescription>
         </CardHeader>
         <CardContent>
-          <ClaimTable claims={approved} emptyText="ยังไม่มีรายการอนุมัติแล้วตามเงื่อนไข" actionLabel="ดูรายละเอียด" tone="approved" />
+          <ClaimTable claims={approved} emptyText="ยังไม่มีรายการอนุมัติแล้วตามเงื่อนไข" actionLabel="ดูรายละเอียด" tone="approved" returnHref={returnHref} />
         </CardContent>
       </Card>
 
@@ -335,7 +389,7 @@ export default async function FinancePage({ searchParams }: PageProps) {
           <CardDescription>รายการเบิกที่ถูก reject พร้อมเหตุผลที่จะแสดงให้พนักงานเห็น</CardDescription>
         </CardHeader>
         <CardContent>
-          <ClaimTable claims={rejected} emptyText="ยังไม่มีรายการถูกปฏิเสธตามเงื่อนไข" actionLabel="ดูรายละเอียด" showRejectReason tone="rejected" />
+          <ClaimTable claims={rejected} emptyText="ยังไม่มีรายการถูกปฏิเสธตามเงื่อนไข" actionLabel="ดูรายละเอียด" showRejectReason tone="rejected" returnHref={returnHref} />
         </CardContent>
       </Card>
     </AppShell>
@@ -347,51 +401,108 @@ function ClaimTable({
   emptyText,
   actionLabel,
   showRejectReason = false,
-  tone = "default"
+  tone = "default",
+  returnHref = "/finance/claims"
 }: {
   claims: ClaimListRow[];
   emptyText: string;
   actionLabel: string;
   showRejectReason?: boolean;
   tone?: "default" | "pending" | "approved" | "rejected";
+  returnHref?: string;
 }) {
   return (
-    <div className={`table-wrap table-section-${tone}`}>
-      <table>
-        <thead>
-          <tr>
-            <th>Claim</th>
-            <th>Employee</th>
-            <th>Date</th>
-            <th>Merchant</th>
-            <th>Total</th>
-            <th>Duplicate</th>
-            <th>Status</th>
-            {showRejectReason ? <th>เหตุผล</th> : null}
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {claims.map((claim) => (
-            <tr key={claim.id}>
-              <td>{claim.claim_no}</td>
-              <td>{employeeName(claim)}</td>
-              <td>{claim.receipt_date ?? "-"}</td>
-              <td>{claim.merchant_name ?? "-"}</td>
-              <td>{formatMoney(claim.total_amount, claim.currency ?? "THB")}</td>
-              <td>{claim.duplicate_score ? <Badge tone="amber">{claim.duplicate_score}%</Badge> : "-"}</td>
-              <td><Badge tone={claimStatusTone(claim.status)}>{claimStatusLabel(claim.status)}</Badge></td>
-              {showRejectReason ? <td className="max-w-md text-sm text-red-700">{claim.reject_reason ?? "-"}</td> : null}
-              <td><Link className="text-primary" href={`/finance/claims/${claim.id}`}>{actionLabel}</Link></td>
-            </tr>
-          ))}
-          {claims.length === 0 ? (
+    <>
+      <div className="divide-y md:hidden">
+        {claims.map((claim) => (
+          <article key={claim.id} className="py-4 first:pt-0 last:pb-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="break-all text-xs text-muted-foreground">{claim.claim_no ?? "ยังไม่มีเลขที่เบิก"}</p>
+                <h3 className="mt-1 break-words text-base font-semibold leading-snug">{employeeName(claim)}</h3>
+                <p className="mt-1 break-words text-sm text-muted-foreground">{claim.merchant_name ?? "ไม่พบชื่อร้านค้า"}</p>
+              </div>
+              <Badge className="shrink-0" tone={claimStatusTone(claim.status)}>{claimStatusLabel(claim.status)}</Badge>
+            </div>
+
+            <div className="mt-4 flex items-end justify-between gap-3 rounded-md bg-muted/60 p-3">
+              <div>
+                <p className="text-xs text-muted-foreground">ยอดเบิก</p>
+                <p className="mt-1 text-xl font-bold tabular-nums">
+                  {formatMoney(claim.total_amount, claim.currency ?? "THB")}
+                </p>
+              </div>
+              <div className="space-y-1.5 text-right text-sm text-muted-foreground">
+                <p className="flex items-center justify-end gap-1.5">
+                  <CalendarDays className="h-4 w-4" aria-hidden />
+                  {claim.receipt_date ?? "ไม่พบวันที่"}
+                </p>
+                <p>
+                  Duplicate: {claim.duplicate_score ? <Badge tone="amber">{claim.duplicate_score}%</Badge> : "ไม่พบ"}
+                </p>
+              </div>
+            </div>
+
+            {showRejectReason && claim.reject_reason ? (
+              <div className="mt-3 flex gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <div className="min-w-0">
+                  <p className="font-medium">เหตุผลที่ไม่อนุมัติ</p>
+                  <p className="mt-0.5 break-words">{claim.reject_reason}</p>
+                </div>
+              </div>
+            ) : null}
+
+            <Button asChild className="mt-4 min-h-11 w-full" variant={tone === "pending" ? "default" : "outline"}>
+              <Link href={`/finance/claims/${claim.id}?returnTo=${encodeURIComponent(returnHref)}`}>
+                <Eye className="h-4 w-4" aria-hidden />
+                {actionLabel}
+              </Link>
+            </Button>
+          </article>
+        ))}
+        {claims.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">{emptyText}</p>
+        ) : null}
+      </div>
+
+      <div className={`table-wrap table-section-${tone} hidden md:block`}>
+        <table>
+          <thead>
             <tr>
-              <td colSpan={showRejectReason ? 9 : 8} className="text-center text-muted-foreground">{emptyText}</td>
+              <th>Claim</th>
+              <th>Employee</th>
+              <th>Date</th>
+              <th>Merchant</th>
+              <th>Total</th>
+              <th>Duplicate</th>
+              <th>Status</th>
+              {showRejectReason ? <th>เหตุผล</th> : null}
+              <th></th>
             </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {claims.map((claim) => (
+              <tr key={claim.id}>
+                <td>{claim.claim_no}</td>
+                <td>{employeeName(claim)}</td>
+                <td>{claim.receipt_date ?? "-"}</td>
+                <td>{claim.merchant_name ?? "-"}</td>
+                <td>{formatMoney(claim.total_amount, claim.currency ?? "THB")}</td>
+                <td>{claim.duplicate_score ? <Badge tone="amber">{claim.duplicate_score}%</Badge> : "-"}</td>
+                <td><Badge tone={claimStatusTone(claim.status)}>{claimStatusLabel(claim.status)}</Badge></td>
+                {showRejectReason ? <td className="max-w-md text-sm text-red-700">{claim.reject_reason ?? "-"}</td> : null}
+                <td><Link className="text-primary" href={`/finance/claims/${claim.id}?returnTo=${encodeURIComponent(returnHref)}`}>{actionLabel}</Link></td>
+              </tr>
+            ))}
+            {claims.length === 0 ? (
+              <tr>
+                <td colSpan={showRejectReason ? 9 : 8} className="text-center text-muted-foreground">{emptyText}</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

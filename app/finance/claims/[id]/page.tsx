@@ -1,15 +1,31 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { FinanceActions } from "@/components/finance-actions";
 import { FinanceReviewData } from "@/components/finance-review-data";
 import { ReceiptViewer } from "@/components/receipt-viewer";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getClaimDetail } from "@/lib/claims";
 import { requirePageProfile } from "@/lib/supabase/server";
 import { claimStatusLabel, claimStatusTone } from "@/lib/status-labels";
 import { formatMoney } from "@/lib/utils";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ returnTo?: string }>;
+};
+
+function safeReturnTo(value?: string) {
+  if (!value) return "/finance/claims";
+  try {
+    const decoded = decodeURIComponent(value);
+    return decoded.startsWith("/finance/claims") ? decoded : "/finance/claims";
+  } catch {
+    return "/finance/claims";
+  }
+}
 
 function changedFields(extracted: any, confirmed: any) {
   const changed: string[] = [];
@@ -20,8 +36,10 @@ function changedFields(extracted: any, confirmed: any) {
   return changed;
 }
 
-export default async function FinanceClaimDetailPage({ params }: PageProps) {
+export default async function FinanceClaimDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const query = (await searchParams) ?? {};
+  const returnTo = safeReturnTo(query.returnTo);
   const { profile } = await requirePageProfile(["FINANCE", "ADMIN"]);
   const { claim, signedUrl } = await getClaimDetail(id, profile);
   const changed = changedFields(claim.extracted_json, claim.confirmed_json);
@@ -29,6 +47,12 @@ export default async function FinanceClaimDetailPage({ params }: PageProps) {
   return (
     <AppShell>
       <div className="mb-6">
+        <Button asChild variant="outline" className="mb-4">
+          <Link href={returnTo}>
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            กลับไปรายการเดิม
+          </Link>
+        </Button>
         <h2 className="text-2xl font-bold">{claim.claim_no}</h2>
         <p className="text-muted-foreground">
           {claim.profiles?.full_name ?? claim.profiles?.email} · {formatMoney(claim.total_amount, claim.currency)}

@@ -1,5 +1,6 @@
 import { apiError, ok } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
 import { masterDataSchema } from "@/lib/validation";
 
@@ -17,6 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { profile } = await requireProfile(["ADMIN"]);
+    await enforceRateLimit({ request, scope: "admin-master-data", subject: profile.id, limit: 60, windowSeconds: 3600 });
     const body = masterDataSchema.parse(await request.json());
     const admin = createAdminSupabase();
     const { data, error } = await admin

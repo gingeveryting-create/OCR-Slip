@@ -22,29 +22,40 @@ export function LoginForm() {
     event.preventDefault();
     setLoading(true);
     setError("");
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      if (authError) {
+        setLoading(false);
+        setError(authError.message);
+        return;
+      }
+
+      const profileResponse = await fetch("/api/me", { credentials: "include" });
+      const profilePayload = await profileResponse.json().catch(() => ({}));
       setLoading(false);
-      setError(authError.message);
-      return;
+
+      if (!profileResponse.ok) {
+        setError(profilePayload.error ?? "เข้าสู่ระบบสำเร็จ แต่เซิร์ฟเวอร์เชื่อมต่อ Supabase ไม่ได้");
+        return;
+      }
+
+      if (!profilePayload.profile) {
+        setError("เข้าสู่ระบบสำเร็จ แต่บัญชีนี้ยังไม่มี profile/role ในตาราง profiles");
+        return;
+      }
+
+      const next = searchParams.get("next");
+      if (next?.startsWith("/") && !next.startsWith("//")) router.push(next);
+      else if (profilePayload.profile.role === "FINANCE") router.push("/finance");
+      else if (profilePayload.profile.role === "ADMIN") router.push("/admin/users");
+      else router.push("/dashboard");
+      router.refresh();
+    } catch (submitError) {
+      console.error("Login request failed", submitError);
+      setLoading(false);
+      setError("ไม่สามารถเชื่อมต่อ Supabase ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่");
     }
-
-    const profileResponse = await fetch("/api/me", { credentials: "include" });
-    const profilePayload = await profileResponse.json();
-    setLoading(false);
-
-    if (!profileResponse.ok || !profilePayload.profile) {
-      setError("เข้าสู่ระบบสำเร็จ แต่ไม่พบ profile/role กรุณาตรวจตาราง profiles ใน Supabase");
-      return;
-    }
-
-    const next = searchParams.get("next");
-    if (next?.startsWith("/") && !next.startsWith("//")) router.push(next);
-    else if (profilePayload.profile.role === "FINANCE") router.push("/finance");
-    else if (profilePayload.profile.role === "ADMIN") router.push("/admin/users");
-    else router.push("/dashboard");
-    router.refresh();
   }
 
   return (

@@ -1,25 +1,43 @@
 import { apiError, ok } from "@/lib/api";
 import { writeAuditLog } from "@/lib/audit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
-import { rejectSchema } from "@/lib/validation";
+import { claimIdSchema, rejectSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
+const reviewableStatuses = ["SUBMITTED", "FINANCE_REVIEW"];
+
 export async function POST(request: Request, { params }: Params) {
   try {
-    const { id } = await params;
+    const id = claimIdSchema.parse((await params).id);
     const { profile } = await requireProfile(["FINANCE", "ADMIN"]);
+    await enforceRateLimit({ request, scope: "finance-decision", subject: profile.id, limit: 120, windowSeconds: 600 });
     const body = rejectSchema.parse(await request.json());
     const admin = createAdminSupabase();
     const { data: current, error: currentError } = await admin.from("expense_claims").select("*").eq("id", id).single();
     if (currentError) throw currentError;
+    if (current.status === "REJECTED" && current.reject_reason === body.reason) return ok({ claim: current });
+    if (!reviewableStatuses.includes(current.status)) {
+      return new Response(JSON.stringify({ error: "ปฏิเสธได้เฉพาะรายการที่ส่งให้ Finance ตรวจ" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     const { data, error } = await admin
       .from("expense_claims")
       .update({ status: "REJECTED", reject_reason: body.reason })
       .eq("id", id)
+      .in("status", reviewableStatuses)
       .select("*")
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) {
+      return new Response(JSON.stringify({ error: "รายการถูกเปลี่ยนสถานะแล้ว กรุณารีเฟรชหน้า" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
     await writeAuditLog({
       claimId: id,
       action: "CLAIM_REJECTED",

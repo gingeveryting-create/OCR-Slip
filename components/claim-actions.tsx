@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 export function ClaimActions({
   claimId,
   canDelete = true,
-  compact = false
+  compact = false,
+  mobile = false
 }: {
   claimId: string;
   canDelete?: boolean;
   compact?: boolean;
+  mobile?: boolean;
 }) {
   const router = useRouter();
 
@@ -32,17 +34,27 @@ export function ClaimActions({
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button asChild variant="outline" size={compact ? "sm" : "default"}>
+    <div className={mobile ? `grid gap-2 ${canDelete ? "grid-cols-2" : "grid-cols-1"}` : "flex flex-wrap gap-2"}>
+      <Button
+        asChild
+        variant="outline"
+        size={compact ? "sm" : "default"}
+        className={mobile ? "min-h-11 w-full" : undefined}
+      >
         <Link href={`/claims/${claimId}/qr`}>
           <QrCode className="h-4 w-4" aria-hidden />
-          Generate QR
+          {mobile ? "ดู QR" : "Generate QR"}
         </Link>
       </Button>
       {canDelete ? (
-        <Button variant="destructive" size={compact ? "sm" : "default"} onClick={deleteClaim}>
+        <Button
+          variant="destructive"
+          size={compact ? "sm" : "default"}
+          className={mobile ? "min-h-11 w-full" : undefined}
+          onClick={deleteClaim}
+        >
           <Trash2 className="h-4 w-4" aria-hidden />
-          Delete
+          {mobile ? "ลบรายการ" : "Delete"}
         </Button>
       ) : null}
     </div>

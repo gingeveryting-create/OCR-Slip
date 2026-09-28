@@ -60,7 +60,7 @@ export default async function BatchClaimQrPage({ searchParams }: PageProps) {
   }).format(new Date());
 
   return (
-    <AppShell>
+    <AppShell variant="employee">
       <div className="no-print mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold">QR Code รวมหลายรายการเบิก</h2>

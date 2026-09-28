@@ -4,9 +4,12 @@ import { OpenAiVisionOcrProvider } from "@/lib/ocr/openai";
 import { TesseractOcrProvider } from "@/lib/ocr/tesseract";
 import type { OcrProvider } from "@/lib/ocr/types";
 
-export function createOcrProvider(): OcrProvider {
+export type OcrProviderName = "mock" | "openai" | "tesseract";
+
+export function createOcrProvider(providerName?: OcrProviderName): OcrProvider {
   const env = getServerEnv();
-  switch (env.OCR_PROVIDER) {
+  const selectedProvider = providerName ?? env.OCR_PROVIDER;
+  switch (selectedProvider) {
     case "mock":
       return new MockOcrProvider();
     case "openai":
@@ -14,6 +17,6 @@ export function createOcrProvider(): OcrProvider {
     case "tesseract":
       return new TesseractOcrProvider();
     default:
-      throw new Error(`Unsupported OCR provider: ${env.OCR_PROVIDER}`);
+      throw new Error(`Unsupported OCR provider: ${selectedProvider}`);
   }
 }

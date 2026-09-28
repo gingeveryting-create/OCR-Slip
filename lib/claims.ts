@@ -2,6 +2,14 @@ import { getServerEnv } from "@/lib/env";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import type { ProfileRow } from "@/types/database";
 
+export const financeVisibleStatuses = ["SUBMITTED", "FINANCE_REVIEW", "APPROVED", "REJECTED", "PAID"];
+
+export function canAccessClaim(profile: ProfileRow, claim: { employee_id: string; status: string }) {
+  if (profile.role === "ADMIN") return true;
+  if (profile.role === "EMPLOYEE") return claim.employee_id === profile.id;
+  return financeVisibleStatuses.includes(claim.status);
+}
+
 export async function getClaimDetail(id: string, profile: ProfileRow) {
   const admin = createAdminSupabase();
   const { data: claim, error } = await admin
@@ -10,7 +18,7 @@ export async function getClaimDetail(id: string, profile: ProfileRow) {
     .eq("id", id)
     .single();
   if (error) throw error;
-  if (profile.role === "EMPLOYEE" && claim.employee_id !== profile.id) {
+  if (!canAccessClaim(profile, claim)) {
     throw new Response("Forbidden", { status: 403 });
   }
 

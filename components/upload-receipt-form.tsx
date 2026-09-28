@@ -39,14 +39,14 @@ export function UploadReceiptForm() {
     setStatus("อัปโหลดสำเร็จ พร้อมเริ่ม OCR");
   }
 
-  async function extract() {
+  async function extract(provider?: "openai" | "tesseract") {
     if (!claimId) return;
-    setStatus("OCR_PROCESSING");
+    setStatus(provider === "openai" ? "กำลังอ่านด้วย GPT OCR..." : "OCR_PROCESSING");
     setError("");
     const response = await fetch("/api/claims/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ claimId })
+      body: JSON.stringify({ claimId, provider })
     });
     const payload = await response.json();
     if (!response.ok) {
@@ -105,9 +105,13 @@ export function UploadReceiptForm() {
             <FileUp className="h-4 w-4" aria-hidden />
             อัปโหลดไฟล์
           </Button>
-          <Button className="w-full" onClick={extract} disabled={!claimId || status === "OCR_PROCESSING"}>
+          <Button className="w-full" onClick={() => extract()} disabled={!claimId || status === "OCR_PROCESSING" || status.includes("GPT")}>
             <ScanText className="h-4 w-4" aria-hidden />
             เริ่ม Extraction
+          </Button>
+          <Button className="w-full bg-slate-950 hover:bg-slate-900" onClick={() => extract("openai")} disabled={!claimId || status === "OCR_PROCESSING" || status.includes("GPT")}>
+            <ScanText className="h-4 w-4" aria-hidden />
+            OCR ด้วย GPT
           </Button>
           {error ? (
             <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">

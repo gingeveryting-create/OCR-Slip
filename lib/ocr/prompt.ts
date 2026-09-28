@@ -20,6 +20,11 @@ Pay special attention to:
 - Merchant name
 - Tax ID
 - QR code text if visible
+- Bank transfer slips from Thai banking apps such as K PLUS, SCB Easy, Krungthai NEXT, Krungsri, Bangkok Bank, ttb, and PromptPay.
+- For BANK_SLIP, totalAmount must be the transferred amount shown near "จำนวน", "Amount", or "ยอดเงิน"; do not use fee/ค่าธรรมเนียม as totalAmount.
+- For BANK_SLIP, merchantName should be the receiver/payee name when no merchant exists.
+- For BANK_SLIP, fill senderName, senderAccount, receiverName, receiverAccount, bankName, transactionId, referenceNo, receiptDate, receiptTime, paymentMethod = "Bank transfer", currency = "THB" where visible.
+- Do not extract product line items. This app only needs summary amounts and key document fields.
 
 Return JSON in the required schema:
 {

@@ -69,12 +69,13 @@ export function SignupForm() {
             <Input
               id="password"
               autoComplete="new-password"
-              minLength={6}
+              minLength={12}
               type="password"
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
               required
             />
+            <p className="text-xs text-muted-foreground">อย่างน้อย 12 ตัวอักษร และมีทั้งตัวอักษรกับตัวเลข</p>
           </div>
           {error ? <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
           {message ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}

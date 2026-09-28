@@ -1,5 +1,6 @@
 node_modules
 .next
+.next-corrupt-*
 .open-next
 .wrangler
 .env
@@ -16,3 +17,4 @@ coverage
 *.tsbuildinfo
 tools/
 .agents/
+supabase/.temp/

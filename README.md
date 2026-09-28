@@ -122,9 +122,31 @@ interface OcrProvider {
 
 implementation à¹à¸£à¸à¸„à¸·à¸­ `OpenAiVisionOcrProvider` à¸—à¸µà¹ˆ `lib/ocr/openai.ts` à¹à¸¥à¸° prompt à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ `lib/ocr/prompt.ts`
 
+### GPT OCR
+
+ตั้งค่าใน `.env.local`:
+
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_OCR_MODEL=gpt-4o-mini
+OCR_PROVIDER=openai
+```
+
+บนหน้าอัปโหลด พนักงานสามารถกด `OCR ด้วย GPT` เพื่อบังคับใช้ OpenAI provider เฉพาะรายการนั้นได้ แม้ค่า default จะเป็น `tesseract` ก็ตาม API key ถูกใช้เฉพาะฝั่ง server route และไม่ถูกส่งไป browser
+
 à¸–à¹‰à¸²à¸ˆà¸°à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸›à¹‡à¸™ Google Vision, Azure Document Intelligence à¸«à¸£à¸·à¸­ AWS Textract à¹ƒà¸«à¹‰à¹€à¸žà¸´à¹ˆà¸¡ provider à¹ƒà¸«à¸¡à¹ˆà¹à¸¥à¸°à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ `createOcrProvider()`
 
 ## Security Notes
+
+Security hardening status and the deployment checklist are maintained in
+[`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md). Before an external test,
+apply every pending Supabase migration, especially
+`supabase/migrations/20260928113639_harden_security_controls.sql`, then run:
+
+```bash
+npm run security:check
+npm run build
+```
 
 - Storage bucket à¹€à¸›à¹‡à¸™ private
 - Server routes à¹ƒà¸Šà¹‰ service role à¹€à¸‰à¸žà¸²à¸°à¸à¸±à¹ˆà¸‡ server

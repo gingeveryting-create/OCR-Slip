@@ -1,32 +1,36 @@
 import { apiError, ok } from "@/lib/api";
 import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
+import { claimIdSchema } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
     const { supabase } = await requireProfile(["FINANCE", "ADMIN"]);
     const url = new URL(request.url);
-    const employee = url.searchParams.get("employee")?.trim() ?? "";
-    const dateFrom = url.searchParams.get("dateFrom")?.trim() ?? "";
-    const dateTo = url.searchParams.get("dateTo")?.trim() ?? "";
+    const employee = (url.searchParams.get("employee")?.trim() ?? "").slice(0, 120);
+    const requestedDateFrom = url.searchParams.get("dateFrom")?.trim() ?? "";
+    const requestedDateTo = url.searchParams.get("dateTo")?.trim() ?? "";
+    const dateFrom = /^\d{4}-\d{2}-\d{2}$/.test(requestedDateFrom) ? requestedDateFrom : "";
+    const dateTo = /^\d{4}-\d{2}-\d{2}$/.test(requestedDateTo) ? requestedDateTo : "";
     const claimIds = Array.from(
       new Set(
         (url.searchParams.get("ids") ?? "")
           .split(",")
           .map((id) => id.trim())
-          .filter((id) => /^[0-9a-f-]{36}$/i.test(id))
+          .filter((id) => claimIdSchema.safeParse(id).success)
       )
     ).slice(0, 50);
 
     let employeeIds: string[] | null = null;
     if (employee) {
       const admin = createAdminSupabase();
-      const safeEmployee = employee.replaceAll(",", " ");
-      const { data: profiles } = await admin
-        .from("profiles")
-        .select("id")
-        .or(`full_name.ilike.%${safeEmployee}%,email.ilike.%${safeEmployee}%`)
-        .limit(50);
-      employeeIds = (profiles ?? []).map((profile) => profile.id);
+      const pattern = `%${employee}%`;
+      const [nameResult, emailResult] = await Promise.all([
+        admin.from("profiles").select("id").ilike("full_name", pattern).limit(50),
+        admin.from("profiles").select("id").ilike("email", pattern).limit(50)
+      ]);
+      if (nameResult.error) throw nameResult.error;
+      if (emailResult.error) throw emailResult.error;
+      employeeIds = Array.from(new Set([...(nameResult.data ?? []), ...(emailResult.data ?? [])].map((profile) => profile.id)));
     }
 
     let query = supabase

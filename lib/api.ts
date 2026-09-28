@@ -1,4 +1,16 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status = 500,
+    public readonly code = "INTERNAL_ERROR"
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 
 export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json(data, init);
@@ -6,13 +18,30 @@ export function ok<T>(data: T, init?: ResponseInit) {
 
 export function apiError(error: unknown) {
   if (error instanceof Response) return error;
-  const message = error instanceof Error ? error.message : "Unexpected server error";
-  return NextResponse.json({ error: message }, { status: 500 });
+  if (error instanceof ApiError) {
+    return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+  }
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        error: "ข้อมูลที่ส่งมาไม่ถูกต้อง",
+        code: "VALIDATION_ERROR",
+        fields: error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }))
+      },
+      { status: 400 }
+    );
+  }
+  console.error("Unhandled API error", {
+    name: error instanceof Error ? error.name : "UnknownError",
+    message: error instanceof Error ? error.message : "Unknown error"
+  });
+  return NextResponse.json({ error: "เกิดข้อผิดพลาดภายในระบบ", code: "INTERNAL_ERROR" }, { status: 500 });
 }
 
 export function mapClaimPatch(input: Record<string, unknown>) {
   const patch = {
     expense_type_id: input.expenseTypeId,
+    document_type: input.documentType,
     merchant_name: input.merchantName,
     receipt_no: input.receiptNo,
     tax_invoice_no: input.taxInvoiceNo,
