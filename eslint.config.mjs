@@ -11,6 +11,7 @@ export default defineConfig([
     ".open-next/**",
     ".wrangler/**",
     ".agents/**",
+    "public/ocr/**",
     "supabase/.temp/**",
     "tools/**",
     "coverage/**",

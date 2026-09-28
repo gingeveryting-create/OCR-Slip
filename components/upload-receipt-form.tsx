@@ -56,6 +56,10 @@ export function UploadReceiptForm() {
         }
         const { createWorker } = await import("tesseract.js");
         worker = await createWorker("eng+tha", 1, {
+          workerPath: "/ocr/worker.min.js",
+          corePath: "/ocr/tesseract-core-lstm.wasm.js",
+          langPath: "/ocr/lang",
+          gzip: true,
           logger: (message) => {
             const percent = typeof message.progress === "number" ? ` ${Math.round(message.progress * 100)}%` : "";
             setStatus(`กำลังอ่านเอกสาร: ${message.status}${percent}`);
