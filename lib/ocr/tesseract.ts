@@ -465,6 +465,10 @@ function parseReceiptFields(rawText: string, confidence: number): OcrExtractionR
   };
 }
 
+export function parseTesseractText(rawText: string, confidence: number): OcrExtractionResult {
+  return parseReceiptFields(rawText, Math.max(0.25, Math.min(0.95, confidence)));
+}
+
 export class TesseractOcrProvider implements OcrProvider {
   async extract(fileUrl: string, mimeType: string): Promise<OcrExtractionResult> {
     if (mimeType === "application/pdf") {

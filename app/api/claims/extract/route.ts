@@ -4,12 +4,20 @@ import { getServerEnv } from "@/lib/env";
 import { writeAuditLog } from "@/lib/audit";
 import { detectDuplicates } from "@/lib/duplicate";
 import { createOcrProvider } from "@/lib/ocr";
+import { parseTesseractText } from "@/lib/ocr/tesseract";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { createAdminSupabase, requireProfile } from "@/lib/supabase/server";
 import { claimIdSchema } from "@/lib/validation";
+import { z } from "zod";
 
 const allowedProviders = new Set(["openai", "tesseract"]);
 const extractableStatuses = ["DRAFT", "OCR_FAILED", "EXTRACTED", "REJECTED"];
+const extractionRequestSchema = z.object({
+  claimId: claimIdSchema,
+  provider: z.enum(["openai", "tesseract"]).optional(),
+  rawText: z.string().trim().min(1).max(250_000).optional(),
+  confidence: z.number().min(0).max(1).optional()
+}).strict();
 
 function requestedProvider(value: unknown) {
   if (typeof value !== "string") return undefined;
@@ -19,11 +27,10 @@ function requestedProvider(value: unknown) {
 export async function POST(request: Request) {
   try {
     const { profile } = await requireProfile(["EMPLOYEE", "ADMIN"]);
-    const body = await request.json();
-    const claimIdResult = claimIdSchema.safeParse(body.claimId);
+    const body = extractionRequestSchema.parse(await request.json());
     const providerOverride = requestedProvider(body.provider);
-    if (!claimIdResult.success) return NextResponse.json({ error: "claimId is invalid" }, { status: 400 });
-    const claimId = claimIdResult.data;
+    const claimId = body.claimId;
+    const browserTesseract = providerOverride === "tesseract" && body.rawText != null;
 
     const admin = createAdminSupabase();
     const { data: claim, error: claimError } = await admin
@@ -84,8 +91,9 @@ export async function POST(request: Request) {
     if (signError) throw signError;
 
     try {
-      const provider = createOcrProvider(providerOverride);
-      const result = await provider.extract(signed.signedUrl, attachment.mime_type);
+      const result = browserTesseract
+        ? parseTesseractText(body.rawText!, body.confidence ?? 0.35)
+        : await createOcrProvider(providerOverride).extract(signed.signedUrl, attachment.mime_type);
       const fields = result.fields;
       const duplicate = await detectDuplicates({
         claimId,
@@ -141,7 +149,7 @@ export async function POST(request: Request) {
 
       await admin.from("ocr_results").insert({
         claim_id: claimId,
-        provider: providerName,
+        provider: browserTesseract ? "tesseract-browser" : providerName,
         status: "SUCCEEDED",
         document_type: result.documentType,
         confidence_score: result.documentTypeConfidence * 100,
@@ -154,7 +162,7 @@ export async function POST(request: Request) {
       await admin.from("expense_claims").update({ status: "OCR_FAILED" }).eq("id", claimId).eq("status", "OCR_PROCESSING");
       await admin.from("ocr_results").insert({
         claim_id: claimId,
-        provider: providerOverride ?? env.OCR_PROVIDER,
+        provider: browserTesseract ? "tesseract-browser" : providerOverride ?? env.OCR_PROVIDER,
         status: "FAILED",
         error_message: error instanceof Error ? error.message : "Extraction failed"
       });

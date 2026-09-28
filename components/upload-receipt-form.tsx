@@ -13,6 +13,7 @@ export function UploadReceiptForm() {
   const [claimId, setClaimId] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [processing, setProcessing] = useState(false);
 
   function selectFile(nextFile?: File) {
     if (!nextFile) return;
@@ -41,20 +42,47 @@ export function UploadReceiptForm() {
 
   async function extract(provider?: "openai" | "tesseract") {
     if (!claimId) return;
-    setStatus(provider === "openai" ? "กำลังอ่านด้วย GPT OCR..." : "OCR_PROCESSING");
+    const selectedProvider = provider ?? "tesseract";
+    setProcessing(true);
+    setStatus(selectedProvider === "openai" ? "กำลังอ่านด้วย GPT OCR..." : "กำลังเตรียม OCR ในเบราว์เซอร์...");
     setError("");
-    const response = await fetch("/api/claims/extract", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ claimId, provider })
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error ?? "Extraction failed");
+    let worker: Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>> | null = null;
+    try {
+      let rawText: string | undefined;
+      let confidence: number | undefined;
+      if (selectedProvider === "tesseract") {
+        if (!file || !file.type.startsWith("image/")) {
+          throw new Error("Tesseract รองรับเฉพาะไฟล์รูปภาพ กรุณาใช้ GPT OCR สำหรับไฟล์ PDF");
+        }
+        const { createWorker } = await import("tesseract.js");
+        worker = await createWorker("eng+tha", 1, {
+          logger: (message) => {
+            const percent = typeof message.progress === "number" ? ` ${Math.round(message.progress * 100)}%` : "";
+            setStatus(`กำลังอ่านเอกสาร: ${message.status}${percent}`);
+          }
+        });
+        const result = await worker.recognize(file);
+        rawText = result.data.text.trim();
+        confidence = Math.max(0, Math.min(1, (result.data.confidence || 0) / 100));
+        if (!rawText) throw new Error("OCR ไม่พบข้อความในรูป กรุณาถ่ายใหม่ให้คมชัดขึ้น");
+        setStatus("กำลังบันทึกผล OCR...");
+      }
+
+      const response = await fetch("/api/claims/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claimId, provider: selectedProvider, rawText, confidence })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Extraction failed");
+      router.push(`/claims/${claimId}/review`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Extraction failed");
       setStatus("OCR_FAILED");
-      return;
+    } finally {
+      if (worker) await worker.terminate();
+      setProcessing(false);
     }
-    router.push(`/claims/${claimId}/review`);
   }
 
   return (
@@ -101,15 +129,15 @@ export function UploadReceiptForm() {
           <CardDescription>อัปโหลดก่อน จากนั้นเริ่มอ่านข้อมูลด้วย OCR/AI</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button className="w-full" onClick={upload} disabled={!file || status.includes("อัปโหลด")}>
+          <Button className="w-full" onClick={upload} disabled={!file || processing || status.includes("อัปโหลด")}>
             <FileUp className="h-4 w-4" aria-hidden />
             อัปโหลดไฟล์
           </Button>
-          <Button className="w-full" onClick={() => extract()} disabled={!claimId || status === "OCR_PROCESSING" || status.includes("GPT")}>
+          <Button className="w-full" onClick={() => extract()} disabled={!claimId || processing}>
             <ScanText className="h-4 w-4" aria-hidden />
             เริ่ม Extraction
           </Button>
-          <Button className="w-full bg-slate-950 hover:bg-slate-900" onClick={() => extract("openai")} disabled={!claimId || status === "OCR_PROCESSING" || status.includes("GPT")}>
+          <Button className="w-full bg-slate-950 hover:bg-slate-900" onClick={() => extract("openai")} disabled={!claimId || processing}>
             <ScanText className="h-4 w-4" aria-hidden />
             OCR ด้วย GPT
           </Button>
