@@ -68,13 +68,9 @@ function lastAmountOnLine(line?: string | null) {
   return amounts.length ? amounts[amounts.length - 1] : null;
 }
 
-function decimalAmounts(text: string) {
-  return extractAmounts(text).filter((amount) => !Number.isInteger(amount));
-}
-
-function repeatedDecimalAmount(text: string) {
+function repeatedAmount(text: string) {
   const counts = new Map<number, number>();
-  for (const amount of decimalAmounts(text)) {
+  for (const amount of extractAmounts(text)) {
     counts.set(amount, (counts.get(amount) ?? 0) + 1);
   }
   const repeated = Array.from(counts.entries())
@@ -84,12 +80,12 @@ function repeatedDecimalAmount(text: string) {
 }
 
 function largestDecimalAmount(text: string) {
-  const amounts = decimalAmounts(text).filter((amount) => amount < 1_000_000);
+  const amounts = extractAmounts(text).filter((amount) => !Number.isInteger(amount) && amount < 1_000_000);
   return amounts.length ? Math.max(...amounts) : null;
 }
 
 function amountFromTotalishLines(lines: string[]) {
-  const totalish = /total|amount|balance|grand|net|due|sum|รวม|ราม|ยอด|สุทธิ|ทั้งหมด|ชำระ|ชําระ|ทั้ง\s*หมด/i;
+  const totalish = /total|amount|balance|grand|net|due|sum|รวม|ราม|[บย]อดสุท[ธที]|ยอด|สุทธิ|ทั้งหมด|ชำระ|ชําระ|ทั้ง\s*หมด/i;
   const candidateLines = lines.filter((line) => totalish.test(compactOcrSpacing(line)));
   const direct = candidateLines
     .map((line) => lastAmountOnLine(line))
@@ -414,7 +410,7 @@ function parseReceiptFields(rawText: string, confidence: number): OcrExtractionR
   const utilityAnchoredTotal = isUtilityBill
     ? amountNear(lines, [/amount/i, /ยอด.*ชำระ|ยอด.*ชําระ|รวม.*ชำระ|รวม.*ชําระ|ค่าไฟฟ้า.*ปัจจุบัน|จํานวนเงินรวม/i], { lookAhead: 1 })
     : null;
-  const repeatedTotal = repeatedDecimalAmount(joined);
+  const repeatedTotal = repeatedAmount(joined);
   const utilityTotal = isUtilityBill ? largestDecimalAmount(joined) : null;
   const totalAmount = saleCurrencyAmount ?? calculatedTotal ?? genericAnchoredTotal ?? utilityAnchoredTotal ?? totalishLineAmount ?? repeatedTotal ?? utilityTotal;
   const totalConfidence =
