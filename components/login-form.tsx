@@ -89,7 +89,7 @@ export function LoginForm() {
             {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
-            ยังไม่มีบัญชี <Link href="/signup" className="text-primary">สมัครสมาชิก</Link>
+            ต้องการเปลี่ยนรหัสผ่าน <Link href="/reset-password" className="text-primary">เปลี่ยนรหัสผ่าน</Link>
           </p>
         </form>
       </CardContent>

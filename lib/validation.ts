@@ -67,12 +67,19 @@ export const adminCreateUserSchema = z.object({
     .regex(/\d/, "Password must include a number")
 }).strict();
 
-export const signupSchema = z.object({
+export const passwordChangeSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(12).max(128).regex(/[A-Za-z]/, "Password must include a letter").regex(/\d/, "Password must include a number"),
-  fullName: z.string().min(1).max(120),
-  department: z.string().max(120).optional().default("")
-}).strict();
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(12).max(128).regex(/[A-Za-z]/, "Password must include a letter").regex(/\d/, "Password must include a number"),
+  confirmPassword: z.string().min(1).max(128)
+}).strict().superRefine((value, context) => {
+  if (value.newPassword !== value.confirmPassword) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["confirmPassword"], message: "Passwords do not match" });
+  }
+  if (value.newPassword === value.currentPassword) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["newPassword"], message: "New password must be different" });
+  }
+});
 
 export const masterDataSchema = z.object({
   code: z.string().trim().min(2).max(50).regex(/^[A-Z0-9_-]+$/i),

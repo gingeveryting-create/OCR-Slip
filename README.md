@@ -211,4 +211,4 @@ In Supabase Auth URL configuration, add:
 - Site URL: `https://YOUR_WORKER_DOMAIN`
 - Redirect URL: `https://YOUR_WORKER_DOMAIN/**`
 
-Then test login, signup, upload, OCR extraction, employee submit, finance review, approve/reject, QR verify, and Excel export.
+Then test login, Admin user creation, password change, upload, OCR extraction, employee submit, finance review, approve/reject, QR verify, and Excel export.

@@ -14,7 +14,7 @@ Last reviewed: 2026-09-28
 - [x] Prevented OCR from reopening approved, paid, cancelled, or in-progress claims.
 - [x] Validated UUIDs and request bodies with Zod and rejected unknown fields.
 - [x] Replaced interpolated Finance search filters with parameterized Supabase filters.
-- [x] Added per-user and per-IP rate limits for signup, upload, OCR, submit, Finance actions, and Admin writes.
+- [x] Added per-user and per-IP rate limits for password changes, upload, OCR, submit, Finance actions, and Admin writes.
 - [x] Validated upload MIME type from file signatures instead of trusting the browser filename.
 - [x] Limited upload size, image dimensions, image pixels, and approximate PDF page count.
 - [x] Sanitized uploaded filenames and stored files in the private receipts bucket.
@@ -23,7 +23,8 @@ Last reviewed: 2026-09-28
 - [x] Added CSP, clickjacking, MIME sniffing, referrer, camera, isolation, and production HSTS headers.
 - [x] Returned generic internal errors to clients while preserving useful server logs.
 - [x] Failed writes when audit-log insertion fails instead of silently losing the audit trail.
-- [x] Changed public signup to Supabase Auth signup without service-role auto-confirmation.
+- [x] Removed public signup; only Admin can create users with an initial password.
+- [x] Required the current credentials before changing a password and revoked refresh sessions afterward.
 - [x] Raised new-account password requirements to 12 characters with letters and numbers.
 - [x] Kept QR verification pages behind login and claim authorization.
 - [x] Added repeatable `npm run security:check` and production build verification.
@@ -41,10 +42,8 @@ Last reviewed: 2026-09-28
 
 ## Supabase dashboard configuration
 
-- [ ] Enable email confirmation for production signup.
 - [ ] Set the production Site URL and exact allowed redirect URLs.
 - [ ] Disable unused Auth providers and review session/OTP expiry settings.
-- [ ] Add CAPTCHA/Turnstile to public signup before broad public launch.
 - [ ] Rotate Supabase service-role and OpenAI keys if they were ever pasted into chat, logs, screenshots, or Git.
 - [ ] Configure database backups and test one restore procedure.
 - [ ] Configure alerts for repeated authentication failures, OCR spikes, and server 5xx responses.
@@ -55,7 +54,7 @@ Last reviewed: 2026-09-28
 - [ ] Set `NEXT_PUBLIC_APP_URL` to the final HTTPS origin.
 - [ ] Run `npm run security:check` and `npm run build` before each deployment.
 - [ ] Test Employee, Finance, and Admin access using separate accounts after deployment.
-- [ ] Verify login, signup confirmation, upload, OCR, correction, submit, approve/reject, QR access, and Excel export.
+- [ ] Verify login, Admin user creation, password change, upload, OCR, correction, submit, approve/reject, QR access, and Excel export.
 - [ ] Verify a cross-origin POST to `/api/*` returns HTTP 403.
 - [ ] Verify unauthenticated protected APIs return HTTP 401.
 - [ ] Review Cloudflare and Supabase logs after the first external test.
